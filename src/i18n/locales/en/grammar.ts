@@ -2,6 +2,7 @@ export const grammar = {
   'grammar.tabs.aria': 'Grammar sections',
   'grammar.tab.paths': 'Learning paths',
   'grammar.tab.grammar': 'Grammar',
+  'grammar.tab.topics': 'Topics',
   'grammar.backTo': 'Back to {title}',
   'grammar.allGrammar': 'All grammar',
   'grammar.paths.syllabus': 'Syllabus paths',

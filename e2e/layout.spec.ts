@@ -107,3 +107,26 @@ for (const course of ['chinese', 'english', 'chinese:emotor', 'english:power-ele
     }
   }
 }
+
+// First run and focus mode are separate screens with their own layout
+for (const lang of LANGUAGES) {
+  for (const vp of VIEWPORTS) {
+    test(`first run and study session · ${lang} · ${vp.name} (${vp.width}px) have no layout overflow`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height });
+      const problems: string[] = [];
+      await page.goto(`/?lang=${lang}`);
+      await page.waitForSelector('[data-course]', { timeout: 15000 });
+      for (const issue of await layoutIssues(page)) problems.push(`onboarding step 1: ${issue}`);
+      await page.locator('main button:not([data-course])').last().click(); // Continue
+      await page.getByRole('radio').first().click();
+      for (const issue of await layoutIssues(page)) problems.push(`onboarding step 2: ${issue}`);
+      await page.locator('main button').last().click();
+      await page.waitForSelector('[data-testid="onboarding-start"]');
+      for (const issue of await layoutIssues(page)) problems.push(`onboarding step 3: ${issue}`);
+      await page.getByTestId('onboarding-start').click();
+      await page.waitForTimeout(500);
+      for (const issue of await layoutIssues(page)) problems.push(`study session: ${issue}`);
+      expect(problems, problems.join('\n')).toEqual([]);
+    });
+  }
+}

@@ -14,8 +14,8 @@ describe('i18n system', () => {
   });
 
   it('translates navigation and dashboard keys in English and Chinese', () => {
-    expect(t('nav.dashboard', 'en')).toBe('Dashboard');
-    expect(t('nav.dashboard', 'zh')).toBe('控制面板');
+    expect(t('nav.dashboard', 'en')).toBe('Today');
+    expect(t('nav.dashboard', 'zh')).toBe('今日');
 
     expect(t('dashboard.dailySchedule', 'en')).toBe('FSRS Daily Schedule');
     expect(t('dashboard.dailySchedule', 'zh')).toBe('FSRS 每日复习计划');

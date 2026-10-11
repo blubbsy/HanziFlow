@@ -26,7 +26,7 @@ interface Props {
 function HskRange({ range }: { range: [number, number] }) {
   const { t } = useI18n();
   return (
-    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
       {range[0] === range[1] ? t('wiki.hskSingle', { level: range[0] }) : t('wiki.hsk', { from: range[0], to: range[1] })}
     </span>
   );
@@ -85,17 +85,17 @@ export function WikiView({ ui, onUiChange, colorTones, speech, onOpenLesson }: P
         <header className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <HskRange range={article.hskRange} />
-            <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
+            <span className="rounded-full bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
               {t(`wiki.category.${article.category}`)}
             </span>
             {article.status !== 'reviewed' && (
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">{t('wiki.draft')}</span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">{t('wiki.draft')}</span>
             )}
             <a
               href={`https://github.com/blubbsy/Adilingo/issues/new?title=${encodeURIComponent(`[Wiki] ${article.id}: ${article.title}`)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-auto text-xs text-slate-400 underline hover:text-rose-600"
+              className="ml-auto text-xs text-slate-500 underline hover:text-rose-600"
             >
               {t('wiki.report')}
             </a>
@@ -192,7 +192,7 @@ export function WikiView({ ui, onUiChange, colorTones, speech, onOpenLesson }: P
                     <HskBadge level={p.hskLevel} />
                     <span className="min-w-0 flex-1 truncate text-sm font-medium"><RichText text={p.title} /></span>
                     <span className="sr-only">{t('wiki.openLesson')}</span>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
                   </button>
                 </li>
               ))}
@@ -207,7 +207,7 @@ export function WikiView({ ui, onUiChange, colorTones, speech, onOpenLesson }: P
     <div ref={topRef} className="space-y-4">
       <p className="text-sm text-slate-600 dark:text-slate-300">{t('wiki.intro')}</p>
       <label className="relative block">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden />
         <input
           type="search"
           value={ui.query}
@@ -250,7 +250,7 @@ export function WikiView({ ui, onUiChange, colorTones, speech, onOpenLesson }: P
               >
                 <span className="flex flex-wrap items-center gap-2">
                   <HskRange range={a.hskRange} />
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500">{t(`wiki.category.${a.category}`)}</span>
+                  <span className="text-xs font-medium uppercase tracking-wide text-slate-500">{t(`wiki.category.${a.category}`)}</span>
                 </span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100"><RichText text={a.title} /></span>
                 <span className="line-clamp-3 text-sm text-slate-500 dark:text-slate-400"><RichText text={a.summary} /></span>

@@ -268,7 +268,7 @@ export function Achievements({ state, vocab }: { state: UserState; vocab: VocabI
         {/* Search bar & status filter */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden />
             <input
               type="text"
               value={search}
@@ -279,7 +279,7 @@ export function Achievements({ state, vocab }: { state: UserState; vocab: VocabI
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-600 dark:hover:text-slate-200"
                 aria-label={t('topics.search.clear')}
               >
                 <X className="h-3.5 w-3.5" />
@@ -341,7 +341,7 @@ export function Achievements({ state, vocab }: { state: UserState; vocab: VocabI
               >
                 <Icon className="h-3.5 w-3.5" aria-hidden />
                 {t(`badge.category.${cat}`)}
-                <span className={`ml-1 rounded-full px-1.5 py-0.2 text-[10px] ${
+                <span className={`ml-1 rounded-full px-1.5 py-0.2 text-xs ${
                   active
                     ? 'bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900'
                     : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
@@ -404,18 +404,18 @@ export function Achievements({ state, vocab }: { state: UserState; vocab: VocabI
                     </div>
 
                     <div className="flex flex-col items-end gap-1.5">
-                      <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tierStyle.pill}`}>
+                      <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${tierStyle.pill}`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${tierStyle.dot}`} />
                         {t('achievements.tierPoints', { tier: t(`badge.tier.${badge.tier}`), points: TIER_POINTS[badge.tier] })}
                       </span>
 
                       {isUnlocked ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                           <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
                           {t('achievements.status.unlocked')}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400">
                           <Lock className="h-3 w-3" aria-hidden />
                           {pct > 0 ? `${pct}%` : t('achievements.status.locked')}
                         </span>
@@ -436,8 +436,8 @@ export function Achievements({ state, vocab }: { state: UserState; vocab: VocabI
 
                 {/* Progress bar and details */}
                 <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-1.5">
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                    <span className="font-medium text-slate-400 dark:text-slate-500">
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                    <span className="font-medium text-slate-500 dark:text-slate-400">
                       {t(`badge.category.${badge.category}`)}
                     </span>
                     <span className="font-semibold text-slate-700 dark:text-slate-300">

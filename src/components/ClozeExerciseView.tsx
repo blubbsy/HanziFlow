@@ -65,7 +65,7 @@ export function ClozeExerciseView({
               !revealed
                 ? slottedWord
                   ? 'border-2 border-rose-500 bg-rose-50 text-rose-700 shadow-sm dark:bg-rose-950/60 dark:text-rose-300'
-                  : 'border-2 border-dashed border-slate-300 bg-white/70 text-slate-400 dark:border-slate-600 dark:bg-slate-800/70'
+                  : 'border-2 border-dashed border-slate-300 bg-white/70 text-slate-500 dark:border-slate-600 dark:bg-slate-800/70'
                 : isCorrect
                 ? 'border-2 border-emerald-500 bg-emerald-100 text-emerald-800 shadow-sm dark:bg-emerald-950/60 dark:text-emerald-300'
                 : 'border-2 border-rose-500 bg-rose-100 text-rose-800 shadow-sm dark:bg-rose-950/60 dark:text-rose-300'
@@ -131,7 +131,7 @@ export function ClozeExerciseView({
                 className={`group relative flex flex-col items-center justify-center rounded-xl border-2 px-3 py-3 text-center transition-all duration-150 active:scale-95 ${cardStyle}`}
               >
                 {/* Keyboard shortcut badge */}
-                <span className="absolute top-1.5 left-2 rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-semibold text-slate-500 group-hover:bg-rose-100 group-hover:text-rose-700 dark:bg-slate-700 dark:text-slate-400 dark:group-bg-rose-900">
+                <span className="absolute top-1.5 left-2 rounded bg-slate-100 px-1.5 py-0.2 text-xs font-semibold text-slate-500 group-hover:bg-rose-100 group-hover:text-rose-700 dark:bg-slate-700 dark:text-slate-400 dark:group-bg-rose-900">
                   {idx + 1}
                 </span>
 

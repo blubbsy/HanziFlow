@@ -98,7 +98,7 @@ export function LanguageMenu({ value, onChange, variant = 'popover', openUp = fa
       >
         <span aria-hidden>{LOCALE_META[value].flag}</span>
         {compact ? <span lang={LOCALE_META[value].htmlLang}>{value.toUpperCase()}</span> : <LanguageName lang={value} />}
-        <ChevronDown className="h-3 w-3 shrink-0 text-slate-400" aria-hidden />
+        <ChevronDown className="h-3 w-3 shrink-0 text-slate-500" aria-hidden />
       </button>
       {open && (
         <div

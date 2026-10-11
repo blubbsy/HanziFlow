@@ -73,7 +73,7 @@ function FormulaChunkWithPlus({ first, big, children }: { first: boolean; big: b
   return (
     <>
       {!first && (
-        <span aria-hidden className={`font-medium text-slate-400 ${big ? 'text-base' : 'text-xs'}`}>
+        <span aria-hidden className={`font-medium text-slate-500 ${big ? 'text-base' : 'text-xs'}`}>
           +
         </span>
       )}
@@ -93,7 +93,7 @@ function FormulaChunk({ chunk, big, track }: { chunk: string; big: boolean; trac
     <span className="inline-flex flex-wrap items-center gap-1">
       {subs.map((s, i) => (
         <span key={i} className="inline-flex items-center gap-1">
-          {i > 0 && <span className="text-slate-400">/</span>}
+          {i > 0 && <span className="text-slate-500">/</span>}
           {isFixedChunk(s, track) ? (
             <span
               className={`rounded-lg bg-rose-100 font-semibold text-rose-700 dark:bg-rose-900/40 dark:text-rose-200 ${pad} ${big ? 'text-base' : ''}`}
@@ -128,7 +128,7 @@ export function ProgressBar({ value, label, className = '' }: { value: number; l
 export function HskBadge({ level, track = 'chinese' }: { level: number; track?: TrackId }) {
   const { t } = useI18n();
   return (
-    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300">
       {track === 'english' ? levelLabel(level, 'english', t) : levelLabel(level)}
     </span>
   );

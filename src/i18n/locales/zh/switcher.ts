@@ -42,4 +42,10 @@ export const switcher: Record<keyof typeof en, string> = {
   'settings.mix.remove': '移除',
   'settings.mix.share': '每次学习中的占比',
   'settings.mix.percent': '{percent}%',
+  'today.chip': '{name} · {count}',
+  'today.mixAdd': '把专业领域加入每日混合',
+  'today.mixAdjust': '调整每日混合',
+  'today.week': '最近 7 天',
+  'today.studied': '{date}已学习',
+  'today.notStudied': '{date}未学习',
 };

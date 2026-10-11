@@ -28,6 +28,12 @@ body {
 kbd {
   font-family: inherit;
 }
+
+/* One visible keyboard focus ring everywhere (components may add their own, this is the safety net). */
+:focus-visible {
+  outline: 2px solid #fb7185;
+  outline-offset: 2px;
+}
 /* Keyboard hints are noise on touch-only devices. */
 @media (hover: none) and (pointer: coarse) {
   kbd {
@@ -49,6 +55,7 @@ kbd {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }

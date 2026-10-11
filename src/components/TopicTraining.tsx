@@ -165,14 +165,14 @@ export function TopicTraining({ vocab, state, speech, onStartSession, onToggleSt
             <div className="px-3">
               <div className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('topics.metric.learned')}</div>
               <div className="text-xl font-bold text-rose-600 dark:text-rose-400">
-                {stats.totalLearned} <span className="text-xs font-normal text-slate-400">/ {stats.totalWords}</span>
+                {stats.totalLearned} <span className="text-xs font-normal text-slate-500">/ {stats.totalWords}</span>
               </div>
             </div>
             <div className="h-8 w-px bg-slate-200 dark:bg-slate-800" />
             <div className="px-3">
               <div className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('topics.metric.mastered')}</div>
               <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                {stats.completedPacks} <span className="text-xs font-normal text-slate-400">/ {stats.totalPacks}</span>
+                {stats.completedPacks} <span className="text-xs font-normal text-slate-500">/ {stats.totalPacks}</span>
               </div>
             </div>
           </div>
@@ -215,7 +215,7 @@ export function TopicTraining({ vocab, state, speech, onStartSession, onToggleSt
 
       {/* Search Bar */}
       <div className="relative max-w-md">
-        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
+        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden />
         <input
           type="text"
           value={search}
@@ -226,7 +226,7 @@ export function TopicTraining({ vocab, state, speech, onStartSession, onToggleSt
         {search && (
           <button
             onClick={() => setSearch('')}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-600 dark:hover:text-slate-200"
             aria-label={t('topics.search.clear')}
           >
             <X className="h-3.5 w-3.5" />
@@ -269,17 +269,17 @@ export function TopicTraining({ vocab, state, speech, onStartSession, onToggleSt
                     </div>
 
                     <div className="flex flex-col items-end gap-1">
-                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                         {t(`topics.theme.${pack.theme}`)}
                       </span>
 
                       {pct === 100 ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                           <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
                           {t('topics.mastered')}
                         </span>
                       ) : (
-                        <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                           {t('topics.learnedOf', { learned: learnedCount, total: words.length })}
                         </span>
                       )}
@@ -292,7 +292,7 @@ export function TopicTraining({ vocab, state, speech, onStartSession, onToggleSt
                       <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
                         {pack.title}
                       </h3>
-                      <span className="font-hanzi text-xs font-semibold text-slate-400 dark:text-slate-500">
+                      <span className="font-hanzi text-xs font-semibold text-slate-500 dark:text-slate-400">
                         {pack.chineseTitle}
                       </span>
                     </div>
@@ -312,7 +312,7 @@ export function TopicTraining({ vocab, state, speech, onStartSession, onToggleSt
                       </span>
                     ))}
                     {words.length > 5 && (
-                      <span className="inline-flex items-center rounded-lg bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-400 dark:bg-slate-800/50">
+                      <span className="inline-flex items-center rounded-lg bg-slate-50 px-1.5 py-0.5 text-xs text-slate-500 dark:bg-slate-800/50">
                         {t('topics.more', { count: words.length - 5 })}
                       </span>
                     )}
@@ -323,7 +323,7 @@ export function TopicTraining({ vocab, state, speech, onStartSession, onToggleSt
                 <div className="mt-5 space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                   {/* Progress bar */}
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                       <span>{t('topics.progress')}</span>
                       <span className="font-semibold text-slate-700 dark:text-slate-300">{formatNumber(pct / 100, { style: 'percent' })}</span>
                     </div>
@@ -382,7 +382,7 @@ export function TopicTraining({ vocab, state, speech, onStartSession, onToggleSt
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                       {activePackData.pack.title}
                     </h2>
-                    <span className="font-hanzi text-sm font-semibold text-slate-400">
+                    <span className="font-hanzi text-sm font-semibold text-slate-500">
                       {activePackData.pack.chineseTitle}
                     </span>
                   </div>
@@ -394,7 +394,7 @@ export function TopicTraining({ vocab, state, speech, onStartSession, onToggleSt
 
               <button
                 onClick={() => setActivePack(null)}
-                className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
                 aria-label={t('common.close')}
               >
                 <X className="h-5 w-5" />
@@ -487,7 +487,7 @@ export function TopicTraining({ vocab, state, speech, onStartSession, onToggleSt
                           {item.english.join(', ')}
                         </p>
                         {item.exampleSentence && (
-                          <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500 font-hanzi">
+                          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 font-hanzi">
                             {item.exampleSentence.hanzi} ({item.exampleSentence.english})
                           </p>
                         )}
@@ -509,11 +509,11 @@ export function TopicTraining({ vocab, state, speech, onStartSession, onToggleSt
                       </button>
 
                       {learned ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
                           <CheckCircle2 className="h-3 w-3" /> {t('dictionary.status.learned')}
                         </span>
                       ) : (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                           {t('topics.new')}
                         </span>
                       )}

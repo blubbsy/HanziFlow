@@ -6,19 +6,20 @@ test.use({ viewport: { width: 1280, height: 800 } });
 test.describe('Specialty courses', () => {
   test('start a specialty course from the catalogue, study, and return to the language course untouched', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('text=Syllabus progress')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible();
 
     await selectCourse(page, 'chinese:emotor');
 
     // The specialty course has paths (no grammar), topics and a dictionary
     await expect(page.getByRole('dialog')).toHaveCount(0);
     const nav = page.getByRole('navigation').first();
-    await expect(nav.getByRole('button', { name: /Paths|学习路径|分级路径/ }).first()).toBeVisible();
+    await expect(nav.getByRole('button', { name: /Learn|学习|Lernen/ }).first()).toBeVisible();
     await page.goto('/#/learn');
-    await expect(page.getByRole('tab')).toHaveCount(0);
+    await expect(page.getByRole('tab')).toHaveCount(2);
+    await expect(page.getByText('Essentials').first()).toBeVisible();
+    await page.goto('/#/insights');
     await expect(page.getByText('Essentials').first()).toBeVisible();
     await page.goto('/#/home');
-    await expect(page.getByText('Essentials').first()).toBeVisible();
 
     await page.getByRole('button', { name: /start today's session|开始今日/i }).first().click();
     await expect(page.getByRole('button', { name: /End session|结束/ })).toBeVisible();
@@ -35,7 +36,7 @@ test.describe('Specialty courses', () => {
     await expect(page.getByRole('region', { name: /Specialty course/ })).toBeVisible();
     await page.getByTestId('back-to-language-course').click();
     await expect(page.getByRole('region', { name: /Specialty course/ })).toHaveCount(0);
-    await expect(page.locator('text=Syllabus progress')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible();
     await expect(page.getByText('Essentials')).toHaveCount(0);
   });
 
@@ -60,7 +61,7 @@ test.describe('Daily mix', () => {
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-pressed', 'true');
     await page.keyboard.press('Escape');
-    await expect(page.getByText(/from your daily mix/i).first()).toBeVisible();
+    await expect(page.getByText(/Power electronics · \d+/i).first()).toBeVisible();
 
     await page.getByRole('button', { name: 'Settings' }).first().click();
     await expect(page.getByRole('button', { name: /Remove Power electronics/i })).toBeVisible();
@@ -124,7 +125,7 @@ test.describe('Chinese grammar wiki', () => {
     await page.goto('/');
     await selectCourse(page, 'english');
     await page.goto('/#/learn');
-    await expect(page.getByRole('tab')).toHaveCount(3);
+    await expect(page.getByRole('tab')).toHaveCount(4);
     await page.getByRole('tab').nth(1).click();
     await page.locator('ul li button').first().click(); // first English lesson
     await page.getByRole('button', { name: /Start practice|开始练习|Üben|Practice/i }).first().click();

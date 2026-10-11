@@ -5,6 +5,7 @@ import { bulkMarkLevelKnown } from '../utils/srsEngine';
 import { trackOf } from '../data/courses';
 import { parseDomainCourse } from '../data/domains';
 import { useI18n } from '../i18n/react';
+import { ModalFrame } from './ModalFrame';
 
 interface Props {
   vocab: VocabItem[];
@@ -37,11 +38,10 @@ export function BulkMarkModal({ vocab, state, isOpen, course = state.settings.co
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-800">
+    <ModalFrame label={t('dashboard.bulkMark')} onClose={onClose} className="relative w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-800">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700"
+          className="absolute right-4 top-4 rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700"
           aria-label={t('common.close')}
         >
           <X className="h-5 w-5" />
@@ -105,7 +105,6 @@ export function BulkMarkModal({ vocab, state, isOpen, course = state.settings.co
             {t('common.done')}
           </button>
         </div>
-      </div>
-    </div>
+    </ModalFrame>
   );
 }

@@ -254,7 +254,7 @@ export function IrregularVerbsTrainer({ speech, onBack }: Props) {
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
             {/* Front: Prompt Base Verb */}
             <div className="p-8 text-center sm:p-12">
-              <span className="text-xs uppercase tracking-widest text-slate-400">{t('english.irregular.baseForm')}</span>
+              <span className="text-xs uppercase tracking-widest text-slate-500">{t('english.irregular.baseForm')}</span>
               <div className="mt-2 flex items-center justify-center gap-3">
                 <h2 className="text-4xl font-black text-slate-900 dark:text-slate-100 sm:text-5xl">
                   {currentVerb.v1}
@@ -371,7 +371,7 @@ export function IrregularVerbsTrainer({ speech, onBack }: Props) {
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-8">
-            <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               {t('english.irregular.choose')}
             </div>
 
@@ -424,7 +424,7 @@ export function IrregularVerbsTrainer({ speech, onBack }: Props) {
                     }}
                     className={`flex flex-col items-center justify-center rounded-2xl border p-4 text-center transition-all ${cardStyle}`}
                   >
-                    <span className="text-xs font-semibold text-slate-400">[{idx + 1}]</span>
+                    <span className="text-xs font-semibold text-slate-500">[{idx + 1}]</span>
                     <span className="mt-1 text-base font-bold">{opt}</span>
                   </button>
                 );
@@ -493,15 +493,15 @@ export function IrregularVerbsTrainer({ speech, onBack }: Props) {
                     </td>
                     <td className="px-4 py-3 font-bold text-slate-900 dark:text-slate-100">
                       <div>{v.v1}</div>
-                      <div className="text-[11px] text-slate-400 font-normal">{v.ipaV1}</div>
+                      <div className="text-xs text-slate-500 font-normal">{v.ipaV1}</div>
                     </td>
                     <td className="px-4 py-3 font-semibold text-amber-700 dark:text-amber-400">
                       <div>{v.v2}</div>
-                      <div className="text-[11px] text-slate-400 font-normal">{v.ipaV2}</div>
+                      <div className="text-xs text-slate-500 font-normal">{v.ipaV2}</div>
                     </td>
                     <td className="px-4 py-3 font-semibold text-emerald-700 dark:text-emerald-400">
                       <div>{v.v3}</div>
-                      <div className="text-[11px] text-slate-400 font-normal">{v.ipaV3}</div>
+                      <div className="text-xs text-slate-500 font-normal">{v.ipaV3}</div>
                     </td>
                     <td className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">
                       {v.meaningZh}
@@ -509,7 +509,7 @@ export function IrregularVerbsTrainer({ speech, onBack }: Props) {
                     <td className="px-4 py-3">
                       <button
                         onClick={() => speech.speak(`${v.v1}, ${v.v2}, ${v.v3}`)}
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                        className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
                         title={t('english.irregular.speakAll')}
                       >
                         <Volume2 className="h-4 w-4" />

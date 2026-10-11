@@ -229,7 +229,7 @@ function ActivityChart({ days }: { days: { day: string; reviewed: number; correc
         </div>
       )}
       {!table && (
-        <div className="mt-1 flex justify-between text-[10px] text-slate-400">
+        <div className="mt-1 flex justify-between text-xs text-slate-500">
           <span>{days[0].day.slice(5)}</span>
           <span>{t('insights.today')}</span>
         </div>

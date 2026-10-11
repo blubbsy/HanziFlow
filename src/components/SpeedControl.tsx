@@ -31,7 +31,7 @@ export function SpeedControl({ speech, variant = 'chips', className = '' }: Prop
 
   return (
     <div role="radiogroup" aria-label={t('speed.label')} className={`inline-flex items-center gap-1 ${className}`}>
-      <Gauge className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+      <Gauge className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
       {SPEECH_RATES.map((r) => {
         const active = speech.rate === r;
         return (

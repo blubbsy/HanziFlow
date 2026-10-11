@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { COURSES, fallbackView, isViewAvailable, languageCourses } from '../../data/courses';
+import { COURSES, SECONDARY_VIEWS, fallbackView, isViewAvailable, languageCourses } from '../../data/courses';
 import { mobileNavItemsFor, navItemsFor } from '../navigation';
 import { loadLocale } from '../../i18n';
 
@@ -12,7 +12,8 @@ describe('navigation is derived from the course registry', () => {
     for (const course of Object.values(COURSES)) {
       for (const lang of ['en', 'zh', 'de'] as const) {
         const items = navItemsFor(course.id, lang);
-        expect(items.map((i) => i.id)).toEqual(course.views.filter((v) => v !== 'irregular')); // irregular verbs are reached from the Grammar tab
+        // Topics and irregular verbs live inside Learn, badges inside Progress
+        expect(items.map((i) => i.id)).toEqual(course.views.filter((v) => !SECONDARY_VIEWS.includes(v)));
         const mobile = mobileNavItemsFor(course.id, lang);
         expect(mobile.map((i) => i.id)).toEqual(course.mobileViews);
         for (const item of [...items, ...mobile]) {
@@ -27,17 +28,17 @@ describe('navigation is derived from the course registry', () => {
 
   it('keeps the existing navigation of both courses and translates to German', () => {
     expect(navItemsFor('chinese', 'en').map((i) => i.label)).toEqual([
-      'Dashboard', 'Paths & Grammar', 'Topic Training', 'Dictionary', 'Insights', 'Badges',
+      'Today', 'Learn', 'Words', 'Progress',
     ]);
     // both language courses have the same screens under the same names
     expect(navItemsFor('english', 'zh').map((i) => i.id)).toEqual(navItemsFor('chinese', 'zh').map((i) => i.id));
     expect(navItemsFor('english', 'en').map((i) => i.label)).toEqual(navItemsFor('chinese', 'en').map((i) => i.label));
-    expect(navItemsFor('english', 'zh')[1].label).toBe('学习路线与语法');
-    expect(navItemsFor('chinese:emotor', 'en')[1].label).toBe('Paths');
-    expect(mobileNavItemsFor('chinese', 'en').map((i) => i.short)).toEqual(['Home', 'Learn', 'Topics', 'Words', 'Stats']);
+    expect(navItemsFor('english', 'zh')[1].label).toBe('学习');
+    expect(navItemsFor('chinese:emotor', 'en')[1].label).toBe('Learn');
+    expect(mobileNavItemsFor('chinese', 'en').map((i) => i.short)).toEqual(['Today', 'Learn', 'Words', 'Progress']);
     expect(mobileNavItemsFor('english', 'zh').map((i) => i.short)).toEqual(mobileNavItemsFor('chinese', 'zh').map((i) => i.short));
-    expect(mobileNavItemsFor('chinese', 'de').map((i) => i.short)).toEqual(['Start', 'Lernen', 'Themen', 'Wörter', 'Statistik']);
-    expect(mobileNavItemsFor('english', 'de').map((i) => i.short)).toEqual(['Start', 'Lernen', 'Themen', 'Wörter', 'Statistik']);
+    expect(mobileNavItemsFor('chinese', 'de').map((i) => i.short)).toEqual(['Heute', 'Lernen', 'Wörter', 'Fortschritt']);
+    expect(mobileNavItemsFor('english', 'de').map((i) => i.short)).toEqual(['Heute', 'Lernen', 'Wörter', 'Fortschritt']);
   });
 
   it('redirects unavailable views to a view the course does have', () => {

@@ -141,7 +141,7 @@ export function Dictionary({ vocab, state, speech, onStart, onToggleStar }: Prop
       <section className="min-w-0">
         <div className="sticky top-[57px] z-10 -mx-4 bg-slate-50/95 px-4 pb-3 pt-1 backdrop-blur sm:-mx-6 sm:px-6 lg:top-0 lg:mx-0 lg:px-0 dark:bg-slate-950/95">
           <label className="relative block">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" aria-hidden />
             <input
               type="search"
               value={query}
@@ -229,7 +229,7 @@ export function Dictionary({ vocab, state, speech, onStart, onToggleStar }: Prop
                     <PinyinText item={item} color={color} className="block text-sm" />
                     <span className="block truncate text-sm text-slate-600 dark:text-slate-300">{item.english.slice(0, 3).join('; ')}</span>
                   </span>
-                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                     {levelLabel(item.hskLevel, state.settings.course, t)}
                   </span>
                 </button>
@@ -238,7 +238,7 @@ export function Dictionary({ vocab, state, speech, onStart, onToggleStar }: Prop
                   onClick={() => onToggleStar(item.id)}
                   aria-label={isStarred ? t('dictionary.unstar', { word: item.hanzi }) : t('dictionary.star', { word: item.hanzi })}
                   title={isStarred ? t('dictionary.unstarTitle') : t('dictionary.starTitle')}
-                  className="px-3.5 py-3 text-slate-400 hover:text-amber-500 focus-visible:outline-none focus-visible:text-amber-500 transition"
+                  className="px-3.5 py-3 text-slate-500 hover:text-amber-500 focus-visible:outline-none focus-visible:text-amber-500 transition"
                 >
                   <Star
                     className={`h-5 w-5 transition ${
@@ -338,9 +338,9 @@ function WordDetail({
             onClick={() => onToggleStar(item.id)}
             title={isStarred ? t('dictionary.removeStarred') : t('dictionary.addStarred')}
             aria-label={isStarred ? t('dictionary.removeStarred') : t('dictionary.addStarred')}
-            className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-amber-500 transition dark:hover:bg-slate-700"
+            className="rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-amber-500 transition dark:hover:bg-slate-700"
           >
-            <Star className={`h-6 w-6 transition ${isStarred ? 'fill-amber-400 text-amber-400' : 'text-slate-400'}`} />
+            <Star className={`h-6 w-6 transition ${isStarred ? 'fill-amber-400 text-amber-400' : 'text-slate-500'}`} />
           </button>
         </div>
       </div>
@@ -351,7 +351,7 @@ function WordDetail({
       </ol>
       {item.definition && (
         <div className="rounded-xl bg-slate-50 p-2.5 text-sm dark:bg-slate-900/60">
-          <div className="text-[11px] uppercase tracking-wide text-slate-500">
+          <div className="text-xs uppercase tracking-wide text-slate-500">
             {t('domain.definition')}
             {item.abbr ? ` · ${t('domain.abbreviation')}: ${item.abbr}` : ''}
           </div>
@@ -361,25 +361,25 @@ function WordDetail({
       <dl className="grid grid-cols-2 gap-2 text-sm">
         {item.domain ? (
           <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-slate-900/60">
-            <dt className="text-[11px] uppercase tracking-wide text-slate-500">{t('curriculum.domain.short')}</dt>
+            <dt className="text-xs uppercase tracking-wide text-slate-500">{t('curriculum.domain.short')}</dt>
             <dd className="font-medium">{levelLabel(item.hskLevel, state.settings.course, t)}</dd>
           </div>
         ) : trackOf(state.settings.course) === 'chinese' ? (
           CURRICULA.filter((c) => c.id !== 'domain').map((c) => (
             <div key={c.id} className="rounded-xl bg-slate-50 p-2.5 dark:bg-slate-900/60">
-              <dt className="text-[11px] uppercase tracking-wide text-slate-500">{t(`curriculum.${c.id}.short`)}</dt>
+              <dt className="text-xs uppercase tracking-wide text-slate-500">{t(`curriculum.${c.id}.short`)}</dt>
               <dd className="font-medium">{item.levels[c.id as Curriculum] ? levelLabel(item.levels[c.id as Curriculum]!, 'chinese') : '—'}</dd>
             </div>
           ))
         ) : (
           <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-slate-900/60">
-            <dt className="text-[11px] uppercase tracking-wide text-slate-500">{t('dictionary.cefrStandard')}</dt>
+            <dt className="text-xs uppercase tracking-wide text-slate-500">{t('dictionary.cefrStandard')}</dt>
             <dd className="font-medium">{levelLabel(item.hskLevel, state.settings.course, t)}</dd>
           </div>
         )}
         {item.radical && (
           <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-slate-900/60">
-            <dt className="text-[11px] uppercase tracking-wide text-slate-500">{t('dictionary.radical')}</dt>
+            <dt className="text-xs uppercase tracking-wide text-slate-500">{t('dictionary.radical')}</dt>
             <dd>
               <span className="font-hanzi text-lg">{item.radical}</span> <span className="text-slate-500">{RADICAL_MEANINGS[item.radical] ?? ''}</span>
             </dd>
@@ -387,14 +387,14 @@ function WordDetail({
         )}
         {item.measureWord && (
           <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-slate-900/60">
-            <dt className="text-[11px] uppercase tracking-wide text-slate-500">{t('dictionary.measureWord')}</dt>
+            <dt className="text-xs uppercase tracking-wide text-slate-500">{t('dictionary.measureWord')}</dt>
             <dd>
               <span className="font-hanzi text-lg">{item.measureWord.hanzi}</span> <FreePinyin text={item.measureWord.pinyin} color={color} />
             </dd>
           </div>
         )}
         <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-slate-900/60">
-          <dt className="text-[11px] uppercase tracking-wide text-slate-500">{t('dictionary.category')}</dt>
+          <dt className="text-xs uppercase tracking-wide text-slate-500">{t('dictionary.category')}</dt>
           <dd>{item.topics.join(', ')}</dd>
         </div>
       </dl>
@@ -416,7 +416,7 @@ function WordDetail({
           {ex.pinyin && <FreePinyin text={ex.pinyin} color={color} className="block text-sm" />}
           <p className="text-sm text-slate-600 dark:text-slate-300">{ex.english}</p>
           {ex.source && (
-            <p className="mt-1 text-[11px] text-slate-400">
+            <p className="mt-1 text-xs text-slate-500">
               {rich('dictionary.tatoeba', { id: ex.source }, {
                 link: (text) => (
                   <a href={`https://tatoeba.org/sentences/show/${ex.source}`} target="_blank" rel="noreferrer" className="underline">

@@ -9,7 +9,9 @@ export type { CourseId, TrackId };
 export type ViewId = 'home' | 'learn' | 'irregular' | 'topics' | 'dictionary' | 'insights' | 'achievements';
 export const ALL_VIEW_IDS: ViewId[] = ['home', 'learn', 'irregular', 'topics', 'dictionary', 'insights', 'achievements'];
 /** Screens reached from inside another screen (not listed in the navigation). */
-export const SECONDARY_VIEWS: ViewId[] = ['irregular'];
+export const SECONDARY_VIEWS: ViewId[] = ['irregular', 'topics', 'achievements'];
+/** Where a secondary screen lives in the navigation (topics and verbs are part of Learn, badges of Progress). */
+export const PARENT_VIEW: Partial<Record<ViewId, ViewId>> = { irregular: 'learn', topics: 'learn', achievements: 'insights' };
 
 export interface CourseLevelInfo {
   level: HskLevel;
@@ -98,7 +100,7 @@ export const COURSES: Record<CourseId, CourseConfig> = {
     cardSubtitleKey: 'course.chinese.cardSubtitle',
     speechSample: '你好，欢迎！',
     views: ['home', 'learn', 'topics', 'dictionary', 'insights', 'achievements'],
-    mobileViews: ['home', 'learn', 'topics', 'dictionary', 'insights'],
+    mobileViews: ['home', 'learn', 'dictionary', 'insights'],
     name: 'Mandarin Chinese',
     nativeName: '中文 (HSK)',
     flag: '🇨🇳',
@@ -171,7 +173,7 @@ export const COURSES: Record<CourseId, CourseConfig> = {
     cardSubtitleKey: 'course.english.cardSubtitle',
     speechSample: 'Hello, welcome to English training!',
     views: ['home', 'learn', 'topics', 'dictionary', 'insights', 'achievements', 'irregular'],
-    mobileViews: ['home', 'learn', 'topics', 'dictionary', 'insights'],
+    mobileViews: ['home', 'learn', 'dictionary', 'insights'],
     name: 'English for Chinese Learners',
     nativeName: '英语 (CEFR / 四六级)',
     flag: '🇬🇧',
@@ -249,7 +251,7 @@ function specialtyCourse(domain: DomainInfo, track: TrackId): CourseConfig {
     cardTitleKey: `course.specialty.${t}.cardTitle`,
     cardSubtitleKey: `course.specialty.${t}.cardSubtitle`,
     views: ['home', 'learn', 'topics', 'dictionary', 'insights', 'achievements'],
-    mobileViews: ['home', 'learn', 'topics', 'dictionary', 'insights'],
+    mobileViews: ['home', 'learn', 'dictionary', 'insights'],
     name: domain.name.en,
     nativeName: domain.name.zh,
     defaultCurriculum: 'domain',

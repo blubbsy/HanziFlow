@@ -39,6 +39,7 @@ import {
   type SyncDevice,
 } from '../utils/syncService';
 import { useI18n, type I18n } from '../i18n/react';
+import { ModalFrame } from './ModalFrame';
 
 interface Props {
   state: UserState;
@@ -271,8 +272,7 @@ export function SyncModal({ state, isOpen, onClose, onStateMerged }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
-      <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col rounded-3xl bg-white shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden">
+    <ModalFrame label={t('app.cloudSync')} onClose={onClose} className="animate-fade-in relative flex max-h-[92vh] w-full max-w-xl flex-col rounded-3xl bg-white shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden">
         {/* Header */}
         <div className="flex items-start justify-between border-b border-slate-100 p-6 dark:border-slate-800">
           <div className="flex items-center gap-3">
@@ -296,7 +296,7 @@ export function SyncModal({ state, isOpen, onClose, onStateMerged }: Props) {
 
           <button
             onClick={onClose}
-            className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
             aria-label={t('common.close')}
           >
             <X className="h-5 w-5" />
@@ -341,7 +341,7 @@ export function SyncModal({ state, isOpen, onClose, onStateMerged }: Props) {
                   </button>
                   <button
                     onClick={handleUnlink}
-                    className="rounded-xl border border-slate-200 p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:border-slate-700 dark:hover:bg-red-950/40"
+                    className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:border-slate-700 dark:hover:bg-red-950/40"
                     title={t('sync.disconnect')}
                     aria-label={t('sync.disconnect')}
                   >
@@ -359,7 +359,7 @@ export function SyncModal({ state, isOpen, onClose, onStateMerged }: Props) {
                       {t('sync.linkedDevices', { count: activeDeviceList.length })}
                     </h3>
                   </div>
-                  <span className="text-[11px] text-slate-400">{t('sync.manageHint')}</span>
+                  <span className="text-xs text-slate-500">{t('sync.manageHint')}</span>
                 </div>
 
                 <div className="divide-y divide-slate-100 dark:divide-slate-800/70 border-t border-slate-100 dark:border-slate-800/70">
@@ -401,7 +401,7 @@ export function SyncModal({ state, isOpen, onClose, onStateMerged }: Props) {
                                 </button>
                                 <button
                                   onClick={() => setEditingDeviceName(false)}
-                                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                  className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
                                   title={t('common.cancel')}
                                 >
                                   <X className="h-3.5 w-3.5" />
@@ -414,7 +414,7 @@ export function SyncModal({ state, isOpen, onClose, onStateMerged }: Props) {
                                 </span>
                                 {isCurrent && (
                                   <>
-                                    <span className="rounded-md bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
+                                    <span className="rounded-md bg-rose-100 px-1.5 py-0.5 text-xs font-bold text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
                                       {t('sync.thisDevice')}
                                     </span>
                                     <button
@@ -422,7 +422,7 @@ export function SyncModal({ state, isOpen, onClose, onStateMerged }: Props) {
                                         setDeviceNameInput(myDeviceName);
                                         setEditingDeviceName(true);
                                       }}
-                                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                                      className="text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
                                       title={t('sync.rename')}
                                     >
                                       <Edit2 className="h-3 w-3" />
@@ -432,7 +432,7 @@ export function SyncModal({ state, isOpen, onClose, onStateMerged }: Props) {
                               </div>
                             )}
 
-                            <div className="text-[11px] text-slate-400">
+                            <div className="text-xs text-slate-500">
                               {isCurrent ? t('sync.activeNow') : t('sync.lastActive', { time: formatRelativeTime(dev.lastActiveAt, i18n) })}
                             </div>
                           </div>
@@ -442,7 +442,7 @@ export function SyncModal({ state, isOpen, onClose, onStateMerged }: Props) {
                           <button
                             onClick={() => handleRevokeRemote(dev.id, dev.name)}
                             disabled={isUnlinking}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                             title={t('sync.unlinkTitle')}
                           >
                             {isUnlinking ? (
@@ -471,7 +471,7 @@ export function SyncModal({ state, isOpen, onClose, onStateMerged }: Props) {
                   </div>
                 ) : (
                   <div className="flex h-48 w-48 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
-                    <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                    <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
                   </div>
                 )}
 
@@ -481,7 +481,7 @@ export function SyncModal({ state, isOpen, onClose, onStateMerged }: Props) {
 
                 {/* 1-Click Link Copy */}
                 <div className="mt-4 flex w-full max-w-md items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-slate-700 dark:bg-slate-900">
-                  <span className="truncate font-mono text-slate-600 dark:text-slate-300 text-[11px]">
+                  <span className="truncate font-mono text-slate-600 dark:text-slate-300 text-xs">
                     {syncLink}
                   </span>
                   <button
@@ -521,7 +521,7 @@ export function SyncModal({ state, isOpen, onClose, onStateMerged }: Props) {
                       <ShieldAlert className="h-3.5 w-3.5 text-amber-500" />
                       <span>{t('sync.security.title')}</span>
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                       {t('sync.security.desc')}
                     </p>
                   </div>
@@ -606,8 +606,7 @@ export function SyncModal({ state, isOpen, onClose, onStateMerged }: Props) {
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </ModalFrame>
   );
 }
 

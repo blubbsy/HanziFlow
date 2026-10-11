@@ -210,7 +210,7 @@ function PathDetail({
                   {done ? <Check className="h-5 w-5" /> : unlocked[i] ? i + 1 : <Lock className="h-4 w-4" />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-xs font-medium uppercase tracking-wide text-slate-400">
+                  <span className="block text-xs font-medium uppercase tracking-wide text-slate-500">
                     {t('grammar.paths.unitLabel', { n: i + 1 })}
                     <span className="sr-only">{done ? t('grammar.paths.status.done') : unlocked[i] ? t('grammar.paths.status.unlocked') : t('grammar.paths.status.locked')}</span>
                   </span>
@@ -218,7 +218,7 @@ function PathDetail({
                   <span className="mt-0.5 block text-sm text-slate-500 dark:text-slate-400">
                     <RichText text={unit.goal} />
                   </span>
-                  <span className={`mt-1 block text-xs ${isPendingReview ? 'font-medium text-amber-600 dark:text-amber-400' : 'text-slate-400'}`}>
+                  <span className={`mt-1 block text-xs ${isPendingReview ? 'font-medium text-amber-600 dark:text-amber-400' : 'text-slate-500'}`}>
                     {unlocked[i]
                       ? t('grammar.paths.stepsDone', { done: doneSteps, total: unit.steps.length })
                       : isPendingReview
@@ -227,7 +227,7 @@ function PathDetail({
                   </span>
                 </span>
                 {unlocked[i] && (
-                  <ChevronDown className={`mt-1 h-5 w-5 shrink-0 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden />
+                  <ChevronDown className={`mt-1 h-5 w-5 shrink-0 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden />
                 )}
               </button>
               {isOpen && (
@@ -294,7 +294,7 @@ function VocabStepRow({ step, done, ctx, onPractice }: { step: VocabStep; done: 
           </p>
           <div className="flex flex-wrap items-center gap-2">
             {!done && partiallyLearned > 0 && (
-              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-800 dark:bg-sky-900/50 dark:text-sky-300">
+              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800 dark:bg-sky-900/50 dark:text-sky-300">
                 {t('grammar.paths.halfReviewed')}
               </span>
             )}
@@ -325,9 +325,9 @@ function VocabStepRow({ step, done, ctx, onPractice }: { step: VocabStep; done: 
                 <span lang="zh-CN" className="block font-hanzi text-base">
                   {w.hanzi}
                 </span>
-                <span className="block text-[11px] opacity-70">
+                <span className="block text-xs opacity-70">
                   {w.pinyin}
-                  {partial && <span className="ml-1 text-[10px] font-semibold text-sky-600 dark:text-sky-400">({reps}/2)</span>}
+                  {partial && <span className="ml-1 text-xs font-semibold text-sky-600 dark:text-sky-400">({reps}/2)</span>}
                 </span>
                 <span className="sr-only">
                   {w.english[0]}
@@ -337,7 +337,7 @@ function VocabStepRow({ step, done, ctx, onPractice }: { step: VocabStep; done: 
             );
           })}
         </ul>
-        {ids.length === 0 && <p className="mt-1 text-xs text-slate-400">{t('grammar.paths.noWords')}</p>}
+        {ids.length === 0 && <p className="mt-1 text-xs text-slate-500">{t('grammar.paths.noWords')}</p>}
         <div className="mt-3">
           <button type="button" className={`${done ? secondaryBtn : primaryBtn} w-full sm:w-auto`} disabled={!ids.length} onClick={onPractice}>
             <Play className="h-4 w-4" aria-hidden />

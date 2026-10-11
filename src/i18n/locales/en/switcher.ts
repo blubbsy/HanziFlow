@@ -40,4 +40,10 @@ export const switcher = {
   'settings.mix.remove': 'Remove',
   'settings.mix.share': 'Share of each session',
   'settings.mix.percent': '{percent}%',
+  'today.chip': '{name} · {count}',
+  'today.mixAdd': 'Add a specialty field to your daily mix',
+  'today.mixAdjust': 'Adjust daily mix',
+  'today.week': 'Last 7 days',
+  'today.studied': 'Studied on {date}',
+  'today.notStudied': 'No study on {date}',
 } as const;

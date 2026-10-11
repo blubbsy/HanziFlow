@@ -4,6 +4,7 @@ export const grammar: Record<keyof typeof en, string> = {
   'grammar.tabs.aria': '语法板块',
   'grammar.tab.paths': '学习路径',
   'grammar.tab.grammar': '语法',
+  'grammar.tab.topics': '主题',
   'grammar.backTo': '返回 {title}',
   'grammar.allGrammar': '全部语法',
   'grammar.paths.syllabus': '大纲路径',

@@ -80,8 +80,8 @@ describe('translation lookup', () => {
   });
 
   it('translates in every language that has the string and interpolates', () => {
-    expect(translate('en', 'nav.dashboard')).toBe('Dashboard');
-    expect(translate('zh', 'nav.dashboard')).toBe('控制面板');
+    expect(translate('en', 'nav.dashboard')).toBe('Today');
+    expect(translate('zh', 'nav.dashboard')).toBe('今日');
     expect(translate('en', 'dashboard.dueAndNew', { due: 1, new: 3 })).toBe('1 review + 3 new');
     expect(translate('en', 'dashboard.dueAndNew', { due: 5, new: 10 })).toBe('5 reviews + 10 new');
   });
@@ -92,7 +92,7 @@ describe('translation lookup', () => {
     const partial = { ...de } as Record<string, string | undefined>;
     delete partial['nav.dashboard'];
     // A language pack may lack a key: the lookup chain must end in English, not in the raw key
-    expect(translateUnsafe('en', 'nav.dashboard')).toBe('Dashboard');
+    expect(translateUnsafe('en', 'nav.dashboard')).toBe('Today');
     expect(translateUnsafe('de', 'no.such.key')).toBe('no.such.key');
   });
 

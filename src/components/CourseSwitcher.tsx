@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Check, Plus, Search, X } from 'lucide-react';
 import type { CourseId, UserState } from '../types';
 import { DOMAIN_FAMILIES, DOMAINS, FAMILY_ICON, domainCourseId, domainName, type DomainInfo } from '../data/domains';
@@ -25,16 +26,8 @@ const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-ro
 export function CourseSwitcher({ state, activeCourse, onSelect, mix, onToggleMix, onClose }: Props) {
   const { t, lang, formatNumber } = useI18n();
   const [query, setQuery] = useState('');
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    closeRef.current?.focus();
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(panelRef, onClose);
 
   const name = (d: DomainInfo) => domainName(d, lang);
 
@@ -75,6 +68,7 @@ export function CourseSwitcher({ state, activeCourse, onSelect, mix, onToggleMix
       onClick={onClose}
     >
       <div
+        ref={panelRef}
         className="relative flex max-h-[92dvh] w-full max-w-3xl flex-col rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl dark:border-slate-700 dark:bg-slate-800"
         onClick={(e) => e.stopPropagation()}
       >
@@ -84,7 +78,6 @@ export function CourseSwitcher({ state, activeCourse, onSelect, mix, onToggleMix
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t('switcher.intro')}</p>
           </div>
           <button
-            ref={closeRef}
             onClick={onClose}
             className={`shrink-0 rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 ${focusRing}`}
             aria-label={t('catalogue.close')}
@@ -164,7 +157,7 @@ export function CourseSwitcher({ state, activeCourse, onSelect, mix, onToggleMix
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t('switcher.specialtyIntro')}</p>
             <p className="mb-3 mt-1 text-sm text-slate-500 dark:text-slate-400">{t('rotation.explain')}</p>
             <label className="relative mb-4 block">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden />
               <input
                 type="search"
                 value={query}

@@ -7,7 +7,7 @@ test.describe('First run', () => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'What do you want to learn?' })).toBeVisible();
     // Nothing else competes for attention
-    await expect(page.getByText('Syllabus progress')).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toHaveCount(0);
 
     await page.getByRole('radio', { name: /English/ }).click();
     await page.getByRole('button', { name: 'Continue' }).click();
@@ -27,9 +27,9 @@ test.describe('First run', () => {
   test('skipping lands on the normal dashboard and is remembered', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Skip for now' }).click();
-    await expect(page.getByText('Syllabus progress')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible();
     await page.waitForTimeout(900); // settings are saved with a 400 ms debounce
     await page.reload();
-    await expect(page.getByText('Syllabus progress')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible();
   });
 });

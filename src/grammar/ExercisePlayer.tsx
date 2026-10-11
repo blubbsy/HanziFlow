@@ -239,7 +239,7 @@ export function ExercisePlayer({ point, speech, onFinish, onExit }: Props) {
 
       {phase === 'answering' ? (
         <div className="mt-5 flex items-center justify-between gap-3">
-          <p className="hidden items-center gap-1.5 text-xs text-slate-400 sm:flex">
+          <p className="hidden items-center gap-1.5 text-xs text-slate-500 sm:flex">
             <Keyboard className="h-3.5 w-3.5" aria-hidden />
             {ex.type === 'order' ? t('grammar.exercise.keysOrder') : t('grammar.exercise.keysChoose', { max: ex.options.length })}
           </p>
@@ -371,7 +371,7 @@ function OptionBody({
               else if (answered && isSel)
                 cardTone = 'border-rose-500 bg-rose-50 text-rose-900 line-through decoration-rose-400 dark:bg-rose-950/40 dark:text-rose-100';
               else if (answered)
-                cardTone = 'border-slate-200 bg-white opacity-40 text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-500';
+                cardTone = 'border-slate-200 bg-white opacity-40 text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400';
 
               return (
                 <button
@@ -383,7 +383,7 @@ function OptionBody({
                   onClick={() => onSelect(i)}
                   className={`group relative flex flex-col items-center justify-center rounded-xl border-2 px-3 py-3 text-center transition-all duration-150 active:scale-95 disabled:cursor-default ${cardTone} ${focusRing}`}
                 >
-                  <span className="absolute top-1.5 left-2 rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-semibold text-slate-500 group-hover:bg-rose-100 group-hover:text-rose-700 dark:bg-slate-750 dark:text-slate-400" aria-hidden>
+                  <span className="absolute top-1.5 left-2 rounded bg-slate-100 px-1.5 py-0.2 text-xs font-semibold text-slate-500 group-hover:bg-rose-100 group-hover:text-rose-700 dark:bg-slate-750 dark:text-slate-400" aria-hidden>
                     {i + 1}
                   </span>
                   <span className={`mt-1 ${script}`} lang={scriptLang}>
@@ -408,7 +408,7 @@ function OptionBody({
                   ? 'border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100'
                   : 'border-emerald-500 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100';
             else if (answered && isSel) tone = 'border-rose-500 bg-rose-50 text-rose-900 line-through decoration-rose-400 dark:bg-rose-950/40 dark:text-rose-100';
-            else if (answered) tone = 'border-slate-200 bg-white text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-500';
+            else if (answered) tone = 'border-slate-200 bg-white text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400';
             return (
               <button
                 key={`${orig}-${i}`}
@@ -467,7 +467,7 @@ function OrderBody({
           locked ? 'border-slate-200 dark:border-slate-700' : 'border-slate-300 dark:border-slate-600'
         }`}
       >
-        {picked.length === 0 && <span className="px-2 text-sm text-slate-400">{t('grammar.exercise.tapWords')}</span>}
+        {picked.length === 0 && <span className="px-2 text-sm text-slate-500">{t('grammar.exercise.tapWords')}</span>}
         {picked.map((b, pos) => (
           <button
             key={`${b}-${pos}`}
@@ -482,7 +482,7 @@ function OrderBody({
           </button>
         ))}
         {!locked && picked.length > 0 && (
-          <button type="button" onClick={onClear} className={`ml-auto rounded-lg p-1.5 text-slate-400 hover:text-rose-600 ${focusRing}`} aria-label={t('grammar.exercise.clear')}>
+          <button type="button" onClick={onClear} className={`ml-auto rounded-lg p-1.5 text-slate-500 hover:text-rose-600 ${focusRing}`} aria-label={t('grammar.exercise.clear')}>
             <Delete className="h-5 w-5" aria-hidden />
           </button>
         )}
@@ -506,7 +506,7 @@ function OrderBody({
             >
               {token}
               {!used && !locked && i < 9 && (
-                <span className="absolute -right-1 -top-1.5 rounded bg-slate-100 px-1 font-sans text-[10px] leading-4 text-slate-500 dark:bg-slate-800 dark:text-slate-400" aria-hidden>
+                <span className="absolute -right-1 -top-1.5 rounded bg-slate-100 px-1 font-sans text-xs leading-4 text-slate-500 dark:bg-slate-800 dark:text-slate-400" aria-hidden>
                   {i + 1}
                 </span>
               )}

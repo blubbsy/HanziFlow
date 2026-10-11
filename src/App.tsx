@@ -8,14 +8,12 @@ import { mergeUserStates } from './utils/syncMerge';
 import { buildRotationCards, interleaveCards, rotationCourseIds, rotationQuota, type RotationSource } from './utils/rotation';
 import { newlyUnlocked, type Badge } from './utils/analytics';
 import { loadLibrary, vocabForCurriculum, type VocabLibrary } from './data/vocab';
-import { ALL_VIEW_IDS, courseVars, effectiveCurriculum, fallbackView, getCourseConfig, isViewAvailable, type CourseId, type ViewId } from './data/courses';
+import { ALL_VIEW_IDS, PARENT_VIEW, courseVars, effectiveCurriculum, fallbackView, getCourseConfig, isViewAvailable, type CourseId, type ViewId } from './data/courses';
 import { CourseSwitcher } from './components/CourseSwitcher';
 import { mobileNavItemsFor, navItemsFor, type NavItem } from './utils/navigation';
 import { Dashboard } from './components/Dashboard';
 import { Onboarding } from './components/Onboarding';
 import { StudySession } from './components/StudySession';
-import { Insights } from './components/Insights';
-import { Achievements } from './components/Achievements';
 import { Dictionary } from './components/Dictionary';
 import { TopicTraining } from './components/TopicTraining';
 import { SettingsModal } from './components/SettingsModal';
@@ -27,7 +25,8 @@ import { LanguageMenu } from './components/LanguageMenu';
 import { describeMessage } from './i18n/errors';
 import { badgeTitle } from './utils/badgeText';
 import type { CardResult } from './components/ReviewCard';
-import { GrammarHub } from './grammar';
+import { GrammarHub, presetGrammarTab } from './grammar';
+import { ProgressScreen, presetProgressTab } from './components/ProgressScreen';
 import {
   getStoredSyncKey,
   setStoredSyncKey,
@@ -43,8 +42,16 @@ const NAV_IDS: NavView[] = ALL_VIEW_IDS;
 /** "#/dictionary" → "dictionary"; anything unknown → home (the old "#/grammar" bookmark opens the learning screen). */
 function viewFromHash(): NavView {
   const raw = window.location.hash.replace(/^#\/?/, '');
-  if (raw === 'grammar') window.history.replaceState(null, '', '#/learn');
-  const id = (raw === 'grammar' ? 'learn' : raw) as NavView;
+  // Old bookmarks: grammar and topics live inside Learn, badges inside Progress
+  if (raw === 'grammar' || raw === 'topics') {
+    if (raw === 'topics') presetGrammarTab('topics');
+    window.history.replaceState(null, '', '#/learn');
+  }
+  if (raw === 'achievements') {
+    presetProgressTab('badges');
+    window.history.replaceState(null, '', '#/insights');
+  }
+  const id = (raw === 'grammar' || raw === 'topics' ? 'learn' : raw === 'achievements' ? 'insights' : raw) as NavView;
   return NAV_IDS.includes(id) ? id : 'home';
 }
 
@@ -344,7 +351,15 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  const navigate = useCallback((v: NavView) => {
+  const navigate = useCallback((requested: NavView) => {
+    let v = requested;
+    if (v === 'topics') {
+      presetGrammarTab('topics');
+      v = 'learn';
+    } else if (v === 'achievements') {
+      presetProgressTab('badges');
+      v = 'insights';
+    }
     if (window.location.hash !== `#/${v}`) window.location.hash = `/${v}`;
     setView(v);
     window.scrollTo({ top: 0 });
@@ -475,24 +490,15 @@ export default function App() {
             onStartVocabSession={startSession}
             onOpenIrregularVerbs={() => navigate('irregular')}
             curriculum={curriculum}
-          />
-        );
-      case 'topics':
-        return (
-          <TopicTraining
-            vocab={vocab}
-            state={state}
-            speech={speech}
-            onStartSession={startSession}
-            onToggleStar={handleToggleStar}
+            topics={
+              <TopicTraining vocab={vocab} state={state} speech={speech} onStartSession={startSession} onToggleStar={handleToggleStar} />
+            }
           />
         );
       case 'dictionary':
         return <Dictionary vocab={vocab} state={state} speech={speech} onStart={startSession} onToggleStar={handleToggleStar} />;
       case 'insights':
-        return <Insights vocab={vocab} state={state} onStart={startSession} />;
-      case 'achievements':
-        return <Achievements vocab={vocab} state={state} />;
+        return <ProgressScreen vocab={vocab} state={state} onStart={startSession} />;
       default:
         // First run: only the three-step setup, nothing else
         if (!state.settings.onboarded && state.stats.totalReviewed === 0 && Object.keys(state.progress).length === 0) {
@@ -505,6 +511,7 @@ export default function App() {
             onStart={startSession}
             onNavigate={navigate}
             onUpdateState={(ns) => update(() => ns)}
+            onOpenCourses={() => setShowSwitcher(true)}
             rotationSources={rotationSources}
             rotationFailed={rotationFailed}
           />
@@ -518,7 +525,8 @@ export default function App() {
 
   const navButton = (n: NavItem, variant: 'side' | 'top') => {
     const Icon = n.icon;
-    const active = shownView === n.id || (shownView === 'study' && session?.returnTo === n.id);
+    const current = shownView === 'study' ? session?.returnTo : shownView;
+    const active = current === n.id || (current !== undefined && PARENT_VIEW[current as ViewId] === n.id);
     return (
       <button
         key={n.id}
@@ -564,7 +572,7 @@ export default function App() {
             <span className="block text-xs text-slate-500">{t('switcher.change')}</span>
             <span className="block text-sm font-semibold leading-snug">{courseName}</span>
           </span>
-          <ChevronsUpDown className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+          <ChevronsUpDown className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
         </button>
 
         <nav className="flex flex-col gap-1 overflow-y-auto" aria-label={t('app.mainNav')}>
@@ -611,7 +619,7 @@ export default function App() {
                 {courseConfig.badge}
               </span>
               <span className="min-w-0 flex-1 truncate text-sm font-semibold">{courseName}</span>
-              <ChevronsUpDown className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+              <ChevronsUpDown className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
             </button>
 
             <nav className="ml-2 hidden flex-1 gap-1 overflow-x-auto md:flex" aria-label={t('app.mainNav')}>
@@ -647,23 +655,16 @@ export default function App() {
         )}
 
         {courseConfig.kind === 'specialty' && !studying && (
-          <div role="region" aria-label={t('switcher.banner', { name: courseName })} className="border-b border-sky-200 bg-sky-50 px-4 py-2.5 text-sm text-sky-900 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-100">
-            <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2">
-              <span className="min-w-0 flex-1 font-medium">{t('switcher.banner', { name: courseName })}</span>
+          <div role="region" aria-label={t('switcher.banner', { name: courseName })} className="border-b border-sky-200 bg-sky-50 px-4 py-1.5 text-sm text-sky-900 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-100">
+            <div className="mx-auto flex max-w-6xl items-center gap-3">
+              <span className="min-w-0 flex-1 truncate font-medium">{t('switcher.banner', { name: courseName })}</span>
               <button
                 type="button"
                 onClick={() => switchCourse(courseConfig.track)}
                 data-testid="back-to-language-course"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 px-3 py-1.5 font-semibold text-white hover:bg-sky-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-sky-700 px-3 py-1 font-semibold text-white hover:bg-sky-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
               >
                 <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden /> {t('switcher.banner.back', { name: t(baseCourse.cardTitleKey) })}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowSwitcher(true)}
-                className="rounded-lg px-3 py-1.5 font-semibold underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
-              >
-                {t('switcher.banner.browse')}
               </button>
             </div>
           </div>
@@ -677,7 +678,7 @@ export default function App() {
           {content}
         </main>
 
-        <footer className={`mx-auto max-w-6xl px-4 pb-8 text-center text-xs text-slate-400 ${studying || !loaded ? 'hidden' : 'hidden md:block'}`}>
+        <footer className={`mx-auto max-w-6xl px-4 pb-8 text-center text-xs text-slate-500 ${studying || !loaded ? 'hidden' : 'hidden md:block'}`}>
           {t(courseConfig.kind === 'specialty' ? 'app.footer.specialty' : courseConfig.track === 'english' ? 'app.footer.english' : 'app.footer.chinese', { words: vocab.length, curriculum: t(`curriculum.${curriculum}.name`) })}
         </footer>
       </div>
@@ -685,18 +686,18 @@ export default function App() {
       {/* Phones: bottom tab bar (hidden while studying to keep the card and grade buttons in reach) */}
       {!studying && (
         <nav
-          className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden dark:border-slate-800 dark:bg-slate-900/95"
+          className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden dark:border-slate-800 dark:bg-slate-900/95"
           aria-label={t('app.mainNav')}
         >
           {mobileNavItems.map((n) => {
             const Icon = n.icon;
-            const active = shownView === n.id;
+            const active = shownView === n.id || PARENT_VIEW[shownView as ViewId] === n.id;
             return (
               <button
                 key={n.id}
                 onClick={() => navigate(n.id)}
                 aria-current={active ? 'page' : undefined}
-                className={`flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium ${active ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'}`}
+                className={`flex flex-col items-center gap-0.5 py-2 text-xs font-medium ${active ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'}`}
               >
                 <Icon className="h-5 w-5" aria-hidden />
                 {n.short}

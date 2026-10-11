@@ -42,4 +42,10 @@ export const switcher: Partial<Record<keyof typeof en, string>> = {
   'settings.mix.remove': 'Entfernen',
   'settings.mix.share': 'Anteil pro Einheit',
   'settings.mix.percent': '{percent} %',
+  'today.chip': '{name} · {count}',
+  'today.mixAdd': 'Ein Fachgebiet zum Tagesmix hinzufügen',
+  'today.mixAdjust': 'Tagesmix anpassen',
+  'today.week': 'Letzte 7 Tage',
+  'today.studied': 'Gelernt am {date}',
+  'today.notStudied': 'Nicht gelernt am {date}',
 };

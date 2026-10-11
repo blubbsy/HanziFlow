@@ -12,18 +12,17 @@ import {
   SlidersHorizontal,
   Sparkles,
   Target,
-  Timer,
   Volume2,
 } from 'lucide-react';
-import type { HskLevel, SessionRequest, UserState, VocabItem } from '../types';
-import { accuracyByLevel, averageLatencySec, calculateTrueRetention, recommendations, type Recommendation } from '../utils/analytics';
-import { bulkMarkLevelKnown, dailyLogFor, effectiveStreak, isWordStudied, queueSummary } from '../utils/srsEngine';
-import { levelLabel } from '../data/vocab';
+import type { CourseId, HskLevel, SessionRequest, UserState, VocabItem } from '../types';
+import { recommendations, type Recommendation } from '../utils/analytics';
+import { bulkMarkLevelKnown, effectiveStreak, queueSummary } from '../utils/srsEngine';
+import { addDays, dayKey } from '../utils/dates';
 import { useI18n } from '../i18n/react';
 import { ModeSelector } from './ModeSelector';
 import { PlacementTestModal } from './PlacementTestModal';
 import { BulkMarkModal } from './BulkMarkModal';
-import { effectiveCurriculum, getCourseConfig } from '../data/courses';
+import { courseVars, getCourseConfig } from '../data/courses';
 import { buildRotationCards, rotationQuota, type RotationSource } from '../utils/rotation';
 
 interface Props {
@@ -32,6 +31,8 @@ interface Props {
   onStart: (req: SessionRequest) => void;
   onNavigate: (view: 'learn' | 'irregular' | 'topics' | 'dictionary' | 'insights' | 'achievements') => void;
   onUpdateState: (newState: UserState) => void;
+  /** Opens the course list, where fields are added to the daily mix. */
+  onOpenCourses: () => void;
   /** Loaded vocabulary of the courses in the daily mix. */
   rotationSources: RotationSource[];
   /** The daily mix could not be loaded. */
@@ -48,17 +49,14 @@ const REC_ICON: Record<Recommendation['kind'], typeof Flame> = {
   streak: Flame,
 };
 
-const panel = 'rounded-3xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/70';
+/** These only repeat what the main button already offers. */
+const REDUNDANT_RECS: Recommendation['kind'][] = ['due', 'new'];
 
-export function Dashboard({
-  vocab,
-  state,
-  onStart,
-  onNavigate,
-  onUpdateState,
-  rotationSources,
-  rotationFailed,
-}: Props) {
+const panel = 'rounded-3xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/70';
+const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400';
+const extraButton = `inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200 ${focusRing}`;
+
+export function Dashboard({ vocab, state, onStart, onNavigate, onUpdateState, onOpenCourses, rotationSources, rotationFailed }: Props) {
   const [showPlacementTest, setShowPlacementTest] = useState(false);
   const [showBulkMark, setShowBulkMark] = useState(false);
   const [showMore, setShowMore] = useState(false);
@@ -66,28 +64,44 @@ export function Dashboard({
 
   const courseConfig = getCourseConfig(state.settings.course);
   const i18n = useI18n();
-  const { t, rich, formatNumber } = i18n;
+  const { t, rich, lang, formatDate } = i18n;
 
-  const recs = useMemo(() => recommendations(state, vocab, new Date(), i18n), [state, vocab, i18n]);
-  const levels = useMemo(() => accuracyByLevel(state, vocab), [state, vocab]);
-  const streak = effectiveStreak(state);
-  const latency = averageLatencySec(state);
-  const today = dailyLogFor(state).reviewed;
-  const seen = useMemo(() => vocab.filter((v) => isWordStudied(state.progress[v.id])).length, [vocab, state.progress]);
-  const currentLevel = levels.find((l) => l.learned < l.words) ?? levels[levels.length - 1];
-
-  const summary = useMemo(() => queueSummary(vocab, state), [vocab, state]);
-  const trueRet = useMemo(() => calculateTrueRetention(state), [state]);
-
-  const activeDailyCount = Math.min(summary.dueCount + summary.newAvailable, summary.remainingToday);
-  const sessionBatchForMix = state.settings.sessionSize ?? 15;
-  const mixCount = useMemo(
-    () => buildRotationCards(rotationSources, state, rotationQuota(state, sessionBatchForMix)).length,
-    [rotationSources, state, sessionBatchForMix],
+  const recs = useMemo(
+    () => recommendations(state, vocab, new Date(), i18n).filter((r) => !REDUNDANT_RECS.includes(r.kind)).slice(0, 2),
+    [state, vocab, i18n],
   );
-  const hasDailyWork = activeDailyCount > 0 || mixCount > 0;
+  const streak = effectiveStreak(state);
+  const summary = useMemo(() => queueSummary(vocab, state), [vocab, state]);
+  const hasHistory = state.stats.totalReviewed > 0;
 
   const sessionBatch = state.settings.sessionSize ?? 15;
+  const activeDailyCount = Math.min(summary.dueCount + summary.newAvailable, summary.remainingToday);
+  const mixCards = useMemo(
+    () => buildRotationCards(rotationSources, state, rotationQuota(state, sessionBatch)),
+    [rotationSources, state, sessionBatch],
+  );
+  const mixCount = mixCards.length;
+  const hasDailyWork = activeDailyCount > 0 || mixCount > 0;
+  const plannedMain = Math.max(0, Math.min(activeDailyCount, sessionBatch - mixCount));
+  const mixByCourse = useMemo(() => {
+    const counts = new Map<CourseId, number>();
+    for (const c of mixCards) if (c.course) counts.set(c.course, (counts.get(c.course) ?? 0) + 1);
+    return [...counts.entries()];
+  }, [mixCards]);
+
+  const week = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = addDays(now, i - 6);
+      return { date: d, done: (state.stats.daily[dayKey(d)]?.reviewed ?? 0) > 0 };
+    });
+  }, [state.stats.daily]);
+
+  const mixConfigured = (state.settings.rotation?.courses.length ?? 0) > 0;
+  const courseName = (id: CourseId) => {
+    const c = getCourseConfig(id);
+    return t(c.cardTitleKey, courseVars(c, lang));
+  };
 
   function handleStartDailySession() {
     if (hasDailyWork) {
@@ -116,288 +130,202 @@ export function Dashboard({
   function handlePlacementComplete(estimatedLevel: HskLevel, markLevelsKnown: HskLevel[]) {
     let nextState: UserState = {
       ...state,
-      placementResult: {
-        estimatedLevel,
-        date: new Date().toISOString(),
-        score: 12,
-        total: 15,
-      },
+      placementResult: { estimatedLevel, date: new Date().toISOString(), score: 12, total: 15 },
     };
-    for (const lvl of markLevelsKnown) {
-      nextState = bulkMarkLevelKnown(nextState, vocab, lvl, true);
-    }
+    for (const lvl of markLevelsKnown) nextState = bulkMarkLevelKnown(nextState, vocab, lvl, true);
     onUpdateState(nextState);
   }
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="min-w-0 space-y-6">
-        {/* Metric tiles on mobile */}
-        <section className="grid grid-cols-2 gap-3 xl:hidden">
-          <Tiles
-            compact
-            streak={streak}
-            best={state.stats.longestStreak}
-            today={today}
-            cap={state.settings.dailyCap}
-            trueRetentionRate={trueRet.rate}
-            matureTotal={trueRet.matureTotal}
-            latency={latency}
-          />
-        </section>
+    <div className="mx-auto max-w-3xl space-y-5">
+      <header className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight">{t('nav.dashboard')}</h1>
+          <p className="truncate text-sm text-slate-600 dark:text-slate-300">{courseName(courseConfig.id)}</p>
+        </div>
+        {hasHistory && (
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1.5 text-sm font-semibold text-orange-700 dark:bg-orange-950/40 dark:text-orange-300">
+            <Flame className="h-4 w-4" aria-hidden /> {t('app.streak', { count: streak })}
+          </span>
+        )}
+      </header>
 
-        {/* HERO: One Main Action - Today's Daily Plan */}
-        <section className={`${panel} relative overflow-hidden p-6 sm:p-8 bg-gradient-to-br from-white via-white to-rose-50/40 dark:from-slate-800 dark:via-slate-800 dark:to-rose-950/20 shadow-sm`}>
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-800 dark:bg-rose-950/60 dark:text-rose-300">
-                <Sparkles className="h-3.5 w-3.5" /> {t('dashboard.dailySchedule')}
+      {/* The one main action */}
+      <section className={`${panel} bg-gradient-to-br from-white via-white to-rose-50/40 p-5 shadow-sm sm:p-7 dark:from-slate-800 dark:via-slate-800 dark:to-rose-950/20`} aria-labelledby="plan-title">
+        <h2 id="plan-title" className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
+          {activeDailyCount > 0
+            ? rich(
+                'dashboard.todayCounts',
+                { due: summary.dueCount, new: summary.newAvailable },
+                {
+                  due: (text) => <span className="text-rose-600 dark:text-rose-400">{text}</span>,
+                  new: (text) => <span className="text-slate-900 dark:text-slate-100">{text}</span>,
+                },
+              )
+            : mixCount > 0
+              ? t('rotation.dashboardOnly', { count: mixCount })
+              : t('dashboard.allCaughtUp')}
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          {hasDailyWork
+            ? t('dashboard.estimatedTime', {
+                min: activeDailyCount > 0 ? summary.estimatedMinutes : Math.max(1, Math.round(mixCount * 0.4)),
+                reviewed: summary.reviewedToday,
+                cap: state.settings.dailyCap,
+              })
+            : t('dashboard.restMessage')}
+        </p>
+
+        {mixCount > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-2" aria-label={t('rotation.dashboard', { count: mixCount })}>
+            {plannedMain > 0 && (
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                {t('today.chip', { name: courseName(courseConfig.id), count: plannedMain })}
               </span>
-              <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
-                {activeDailyCount > 0 ? (
-                  rich(
-                    'dashboard.todayCounts',
-                    { due: summary.dueCount, new: summary.newAvailable },
-                    {
-                      due: (text) => <span className="text-rose-600 dark:text-rose-400">{text}</span>,
-                      new: (text) => <span className="text-slate-900 dark:text-slate-100">{text}</span>,
-                    },
-                  )
-                ) : mixCount > 0 ? (
-                  t('rotation.dashboardOnly', { count: mixCount })
-                ) : (
-                  t('dashboard.allCaughtUp')
-                )}
-              </h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {activeDailyCount > 0
-                  ? t('dashboard.estimatedTime', {
-                      min: summary.estimatedMinutes,
-                      reviewed: summary.reviewedToday,
-                      cap: state.settings.dailyCap,
-                    })
-                  : mixCount > 0
-                    ? t('dashboard.estimatedTime', { min: Math.max(1, Math.round(mixCount * 0.4)), reviewed: summary.reviewedToday, cap: state.settings.dailyCap })
-                    : t('dashboard.restMessage')}
-              </p>
-              {activeDailyCount > 0 && mixCount > 0 && (
-                <p className="mt-1 text-sm text-sky-700 dark:text-sky-300">{t('rotation.dashboard', { count: mixCount })}</p>
-              )}
-              {rotationFailed && (
-                <p role="alert" className="mt-1 text-sm text-amber-700 dark:text-amber-300">{t('rotation.loadError')}</p>
-              )}
-            </div>
-
-            <button
-              onClick={handleStartDailySession}
-              className="inline-flex items-center justify-center gap-2.5 rounded-2xl bg-rose-600 px-7 py-4 text-lg font-bold text-white shadow-xl shadow-rose-600/25 transition active:scale-[0.98] hover:bg-rose-700"
-            >
-              <Play className="h-5 w-5 fill-current" />
-              {hasDailyWork
-                ? t('dashboard.startSession')
-                : t('dashboard.extraPractice', { count: sessionBatch })}
-            </button>
-          </div>
-
-          {/* Optional extras stay out of the way until asked for */}
-          <div className="mt-5 border-t border-slate-100 pt-3 dark:border-slate-700/60">
-            <button
-              type="button"
-              onClick={() => setShowMore((v) => !v)}
-              aria-expanded={showMore}
-              className="inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-sm font-medium text-slate-600 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 dark:text-slate-300 dark:hover:text-white"
-            >
-              <ChevronDown className={`h-4 w-4 transition-transform ${showMore ? 'rotate-180' : ''}`} aria-hidden />
-              {showMore ? t('dashboard.moreHide') : t('dashboard.more')}
-            </button>
-            {showMore && (
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                <button
-                  onClick={() => setShowCustomPractice((prev) => !prev)}
-                  aria-pressed={showCustomPractice}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200"
-                >
-                  <SlidersHorizontal className="h-4 w-4 text-slate-400" aria-hidden />
-                  {showCustomPractice ? t('dashboard.hideCustomPractice') : t('dashboard.customPractice')}
-                </button>
-                {courseConfig.features.placement && (
-                  <button
-                    onClick={() => setShowPlacementTest(true)}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200"
-                  >
-                    <Award className="h-4 w-4 text-amber-500" aria-hidden />
-                    {t('dashboard.placementTest')}
-                  </button>
-                )}
-                <button
-                  onClick={() => setShowBulkMark(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200"
-                >
-                  <CheckCheck className="h-4 w-4 text-emerald-500" aria-hidden />
-                  {t('dashboard.bulkMark')}
-                </button>
-              </div>
             )}
+            {mixByCourse.map(([id, count]) => (
+              <span key={id} className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-800 dark:bg-sky-950/60 dark:text-sky-200">
+                {t('today.chip', { name: courseName(id), count })}
+              </span>
+            ))}
           </div>
-        </section>
+        )}
+        {rotationFailed && (
+          <p role="alert" className="mt-2 text-sm text-amber-700 dark:text-amber-300">{t('rotation.loadError')}</p>
+        )}
 
-        {/* Two clear next places to go */}
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {courseConfig.views.includes('learn') && (
-            <button
-              onClick={() => onNavigate('learn')}
-              className={`${panel} flex items-center gap-3 p-4 text-left transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400`}
-            >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
-                <Compass className="h-5 w-5" aria-hidden />
-              </span>
-              <span className="min-w-0">
-                <span className="block font-semibold">{t('dashboard.exploreLearn')}</span>
-                <span className="block text-xs text-slate-500 dark:text-slate-400">
-                  {t(courseConfig.features.grammar ? 'dashboard.exploreLearnDesc' : 'dashboard.explorePathsDesc')}
-                </span>
-              </span>
-            </button>
-          )}
+        <button
+          onClick={handleStartDailySession}
+          className={`mt-5 inline-flex w-full items-center justify-center gap-2.5 rounded-2xl bg-rose-600 px-7 py-4 text-lg font-bold text-white shadow-xl shadow-rose-600/25 transition hover:bg-rose-700 active:scale-[0.98] sm:w-auto ${focusRing}`}
+        >
+          <Play className="h-5 w-5 fill-current" aria-hidden />
+          {hasDailyWork ? t('dashboard.startSession') : t('dashboard.extraPractice', { count: sessionBatch })}
+        </button>
+
+        <div className="mt-4">
           <button
-            onClick={() => onNavigate('topics')}
-            className={`${panel} flex items-center gap-3 p-4 text-left transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400`}
+            type="button"
+            onClick={onOpenCourses}
+            className={`rounded-lg px-1 py-1 text-sm font-medium text-sky-700 underline-offset-2 hover:underline dark:text-sky-300 ${focusRing}`}
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
-              <Layers className="h-5 w-5" aria-hidden />
-            </span>
-            <span className="min-w-0">
-              <span className="block font-semibold">{t('dashboard.exploreTopics')}</span>
-              <span className="block text-xs text-slate-500 dark:text-slate-400">{t('dashboard.exploreTopicsDesc')}</span>
-            </span>
+            {mixConfigured ? t('today.mixAdjust') : t('today.mixAdd')}
           </button>
-        </section>
+        </div>
+      </section>
 
-        {/* Collapsible Custom Practice Panel */}
-        {showCustomPractice && (
-          <section className="animate-fade-in">
-            <ModeSelector vocab={vocab} state={state} onStart={onStart} />
-          </section>
-        )}
-
-        {/* Recommendations */}
-        {recs.length > 0 && (
-          <section>
-            <h2 className="mb-3 text-lg font-semibold">{t('dashboard.recommended')}</h2>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {recs.slice(0, 2).map((r) => {
-                const Icon = REC_ICON[r.kind];
-                return (
-                  <article key={r.id} className={`${panel} flex gap-3 p-4`}>
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-300">
-                      <Icon className="h-5 w-5" aria-hidden />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold">{r.title}</h3>
-                      <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">{r.body}</p>
-                      {r.action && (
-                        <button
-                          onClick={() => onStart(r.action!.request)}
-                          className="mt-2 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
-                        >
-                          {r.action.label}
-                        </button>
-                      )}
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-        )}
-      </div>
-
-      {/* Sidebar on desktop */}
-      <aside className="space-y-6">
-        <section className="hidden grid-cols-2 gap-3 xl:grid">
-          <Tiles
-            streak={streak}
-            best={state.stats.longestStreak}
-            today={today}
-            cap={state.settings.dailyCap}
-            trueRetentionRate={trueRet.rate}
-            matureTotal={trueRet.matureTotal}
-            latency={latency}
-          />
-        </section>
-
-        <section className={`${panel} p-5`}>
-          <div className="flex items-baseline justify-between gap-2">
-            <h2 className="font-semibold">{t('dashboard.syllabusProgress')}</h2>
-            <span className="text-xs text-slate-500">{t(`curriculum.${effectiveCurriculum(state.settings.course, state.settings.curriculum)}.short`)}</span>
-          </div>
-          <p className="mt-0.5 text-xs text-slate-500">
-            {t('dashboard.wordsLearned', {
-              seen: formatNumber(seen),
-              total: formatNumber(vocab.length),
-            })}
-          </p>
-
-          <ul className="mt-4 space-y-3">
-            {levels.map((l) => {
-              const pct = l.words ? Math.round((l.learned / l.words) * 100) : 0;
-              const isCurrent = l.level === currentLevel?.level;
-              const lvlName = levelLabel(l.level, state.settings.course, t);
-              return (
-                <li key={l.level} className="group rounded-xl p-1 transition hover:bg-slate-50 dark:hover:bg-slate-800/50" title={t('dashboard.levelWordsLearned', { learned: l.learned, total: l.words, level: lvlName })}>
-                  <div className="flex items-baseline justify-between text-sm">
-                    <span className={isCurrent ? 'font-semibold' : ''}>
-                      {lvlName}{' '}
-                      {isCurrent && (
-                        <span className="ml-1 rounded bg-rose-100 px-1.5 text-[10px] font-semibold uppercase text-rose-700 dark:bg-rose-900/50 dark:text-rose-200">
-                          {t('dashboard.currentLevel')}
-                        </span>
-                      )}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="tabular-nums text-slate-500 text-xs">
-                        {formatNumber(l.learned)}/{formatNumber(l.words)}
-                      </span>
-                      <button
-                        onClick={() =>
-                          onStart({
-                            label: t('dashboard.levelPracticeLabel', { level: lvlName }),
-                            mode: 'mixed',
-                            levels: [l.level],
-                            topics: [],
-                            ignoreCap: true,
-                            includeNotDue: true,
-                            limit: 15,
-                          })
-                        }
-                        className="rounded-lg bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700 opacity-80 transition hover:bg-rose-600 hover:text-white group-hover:opacity-100 dark:bg-rose-950/60 dark:text-rose-300 dark:hover:bg-rose-600 dark:hover:text-white"
-                        title={t('dashboard.practiceLevel', { level: lvlName })}
-                      >
-                        {t('common.practice')}
-                      </button>
-                    </div>
-                  </div>
-                  <div
-                    className="mt-1 h-2 rounded-full bg-slate-100 dark:bg-slate-700"
-                    role="progressbar"
-                    aria-valuenow={pct}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={t('dashboard.levelProgress', { level: lvlName })}
-                  >
-                    <div
-                      className="h-full rounded-full bg-emerald-500 transition-all"
-                      style={{ width: `${Math.max(pct, l.learned ? 1 : 0)}%` }}
-                    />
-                  </div>
-                </li>
-              );
-            })}
+      {/* Last seven days */}
+      {hasHistory && (
+        <section className={`${panel} flex items-center justify-between gap-3 px-5 py-3`} aria-label={t('today.week')}>
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{t('today.week')}</span>
+          <ul className="flex gap-2">
+            {week.map(({ date, done }) => (
+              <li key={dayKey(date)} className="flex flex-col items-center gap-1">
+                <span
+                  className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${done ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300'}`}
+                  role="img"
+                  aria-label={t(done ? 'today.studied' : 'today.notStudied', { date: formatDate(date, { weekday: 'long' }) })}
+                >
+                  {done ? '✓' : ''}
+                </span>
+                <span className="text-xs text-slate-600 dark:text-slate-300" aria-hidden>{formatDate(date, { weekday: 'narrow' })}</span>
+              </li>
+            ))}
           </ul>
         </section>
-      </aside>
+      )}
 
-      {/* Modals */}
+      {/* Where to go next */}
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {courseConfig.views.includes('learn') && (
+          <button onClick={() => onNavigate('learn')} className={`${panel} flex items-center gap-3 p-4 text-left transition hover:border-slate-300 ${focusRing}`}>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+              <Compass className="h-5 w-5" aria-hidden />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-semibold">{t('dashboard.exploreLearn')}</span>
+              <span className="block text-xs text-slate-600 dark:text-slate-300">
+                {t(courseConfig.features.grammar ? 'dashboard.exploreLearnDesc' : 'dashboard.explorePathsDesc')}
+              </span>
+            </span>
+          </button>
+        )}
+        <button onClick={() => onNavigate('topics')} className={`${panel} flex items-center gap-3 p-4 text-left transition hover:border-slate-300 ${focusRing}`}>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
+            <Layers className="h-5 w-5" aria-hidden />
+          </span>
+          <span className="min-w-0">
+            <span className="block font-semibold">{t('dashboard.exploreTopics')}</span>
+            <span className="block text-xs text-slate-600 dark:text-slate-300">{t('dashboard.exploreTopicsDesc')}</span>
+          </span>
+        </button>
+      </section>
+
+      {recs.length > 0 && (
+        <section aria-labelledby="recs-title">
+          <h2 id="recs-title" className="mb-2 text-base font-semibold">{t('dashboard.recommended')}</h2>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {recs.map((r) => {
+              const Icon = REC_ICON[r.kind];
+              return (
+                <article key={r.id} className={`${panel} flex gap-3 p-4`}>
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-300">
+                    <Icon className="h-5 w-5" aria-hidden />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold">{r.title}</h3>
+                    <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">{r.body}</p>
+                    {r.action && (
+                      <button
+                        onClick={() => onStart(r.action!.request)}
+                        className={`mt-2 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white ${focusRing}`}
+                      >
+                        {r.action.label}
+                      </button>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Optional extras stay out of the way until asked for */}
+      <section>
+        <button
+          type="button"
+          onClick={() => setShowMore((v) => !v)}
+          aria-expanded={showMore}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-sm font-medium text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white ${focusRing}`}
+        >
+          <ChevronDown className={`h-4 w-4 transition-transform ${showMore ? 'rotate-180' : ''}`} aria-hidden />
+          {showMore ? t('dashboard.moreHide') : t('dashboard.more')}
+        </button>
+        {showMore && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+            <button onClick={() => setShowCustomPractice((prev) => !prev)} aria-pressed={showCustomPractice} className={extraButton}>
+              <SlidersHorizontal className="h-4 w-4 text-slate-500" aria-hidden />
+              {showCustomPractice ? t('dashboard.hideCustomPractice') : t('dashboard.customPractice')}
+            </button>
+            {courseConfig.features.placement && (
+              <button onClick={() => setShowPlacementTest(true)} className={extraButton}>
+                <Award className="h-4 w-4 text-amber-500" aria-hidden />
+                {t('dashboard.placementTest')}
+              </button>
+            )}
+            <button onClick={() => setShowBulkMark(true)} className={extraButton}>
+              <CheckCheck className="h-4 w-4 text-emerald-500" aria-hidden />
+              {t('dashboard.bulkMark')}
+            </button>
+          </div>
+        )}
+        {showMore && showCustomPractice && (
+          <div className="mt-4 animate-fade-in">
+            <ModeSelector vocab={vocab} state={state} onStart={onStart} />
+          </div>
+        )}
+      </section>
+
       <PlacementTestModal
         vocab={vocab}
         isOpen={showPlacementTest}
@@ -414,149 +342,6 @@ export function Dashboard({
         onClose={() => setShowBulkMark(false)}
         onUpdateState={onUpdateState}
       />
-    </div>
-  );
-}
-
-function Tiles({
-  compact = false,
-  streak,
-  best,
-  today,
-  cap,
-  trueRetentionRate,
-  matureTotal,
-  latency,
-}: {
-  /** Only the two tiles that matter every day (streak, today's progress). */
-  compact?: boolean;
-  streak: number;
-  best: number;
-  today: number;
-  cap: number;
-  trueRetentionRate: number | null;
-  matureTotal: number;
-  latency: number | null;
-}) {
-  const { t } = useI18n();
-  return (
-    <>
-      <Tile
-        icon={Flame}
-        label={t('dashboard.streak')}
-        value={String(streak)}
-        sub={t('dashboard.bestDays', { best })}
-        accent="text-orange-500"
-        highlight={streak > 0}
-      />
-      <RadialTile
-        label={t('dashboard.today')}
-        value={today}
-        max={cap}
-        sub={t('dashboard.ofGoal', { cap })}
-        accent="text-rose-500"
-      />
-      {!compact && <Tile
-        icon={Target}
-        label={t('dashboard.trueRetention')}
-        value={trueRetentionRate === null ? '—' : `${trueRetentionRate}%`}
-        sub={
-          matureTotal > 0
-            ? t('dashboard.matureCards', { count: matureTotal })
-            : t('dashboard.needsMatureCards')
-        }
-        accent="text-emerald-500"
-        title={t('dashboard.retentionTooltip')}
-      />}
-      {!compact && <Tile
-        icon={Timer}
-        label={t('dashboard.speed')}
-        value={latency === null ? '—' : t('study.summary.seconds', { value: latency.toFixed(1) })}
-        sub={t('dashboard.perCard')}
-        accent="text-sky-500"
-      />}
-    </>
-  );
-}
-
-function RadialTile({
-  label,
-  value,
-  max,
-  sub,
-  accent,
-}: {
-  label: string;
-  value: number;
-  max: number;
-  sub: string;
-  accent: string;
-}) {
-  const pct = Math.min(100, Math.round((value / Math.max(1, max)) * 100));
-  const radius = 17;
-  const stroke = 3.5;
-  const circ = 2 * Math.PI * radius;
-  const offset = circ - (pct / 100) * circ;
-
-  return (
-    <div className={`${panel} flex items-center justify-between p-4`}>
-      <div className="min-w-0">
-        <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
-          <Layers className={`h-4 w-4 ${accent}`} aria-hidden /> {label}
-        </div>
-        <div className="mt-1 text-2xl font-bold tabular-nums">{value}</div>
-        <div className="truncate text-xs text-slate-500">{sub}</div>
-      </div>
-      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center">
-        <svg className="h-12 w-12 -rotate-90 transform" viewBox="0 0 44 44">
-          <circle cx="22" cy="22" r={radius} className="stroke-slate-100 dark:stroke-slate-700" strokeWidth={stroke} fill="transparent" />
-          <circle
-            cx="22"
-            cy="22"
-            r={radius}
-            className="stroke-rose-500 transition-all duration-700 ease-out"
-            strokeWidth={stroke}
-            strokeDasharray={circ}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-            fill="transparent"
-          />
-        </svg>
-        <span className="absolute text-[10px] font-bold tabular-nums text-slate-700 dark:text-slate-200">{pct}%</span>
-      </div>
-    </div>
-  );
-}
-
-function Tile({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  accent,
-  highlight,
-  title,
-}: {
-  icon: typeof Flame;
-  label: string;
-  value: string;
-  sub: string;
-  accent: string;
-  highlight?: boolean;
-  title?: string;
-}) {
-  return (
-    <div
-      title={title}
-      className={`${panel} p-4 transition-colors ${
-        highlight ? 'bg-gradient-to-br from-white to-orange-50/50 dark:from-slate-800/70 dark:to-orange-950/20' : ''
-      }`}
-    >
-      <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
-        <Icon className={`h-4 w-4 ${accent} ${highlight ? 'animate-pulse' : ''}`} aria-hidden /> {label}
-      </div>
-      <div className="mt-1 text-2xl font-bold tabular-nums">{value}</div>
-      <div className="truncate text-xs text-slate-500">{sub}</div>
     </div>
   );
 }

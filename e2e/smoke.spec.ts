@@ -8,7 +8,7 @@ test.describe('Adilingo App Smoke', () => {
     await expect(page).toHaveTitle(/Adilingo/i);
     // Wait for vocab to load and dashboard content to appear
     await expect(page.locator('text=Adilingo').first()).toBeVisible();
-    await expect(page.locator('text=Syllabus progress')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible();
   });
 });
 
@@ -103,12 +103,12 @@ test.describe('Interface language', () => {
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'de');
     await expect(page.getByRole('navigation', { name: 'Hauptnavigation' }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Übersicht' }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Heute' }).first()).toBeVisible();
 
     await page.waitForTimeout(900); // settings are saved with a 400 ms debounce
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('lang', 'de');
-    await expect(page.getByRole('button', { name: 'Übersicht' }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Heute' }).first()).toBeVisible();
   });
 
   test('switches to Chinese and back to English without a blank screen', async ({ page }) => {
@@ -116,12 +116,12 @@ test.describe('Interface language', () => {
     await page.getByRole('button', { name: 'Interface language' }).first().click();
     await page.getByRole('menuitemradio', { name: /简体中文/ }).click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
-    await expect(page.getByRole('button', { name: '控制面板' }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: '今日' }).first()).toBeVisible();
 
     await page.getByRole('button', { name: '界面语言' }).first().click();
     await page.getByRole('menuitemradio', { name: /English/ }).click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(page.getByRole('button', { name: 'Dashboard' }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Today' }).first()).toBeVisible();
   });
 
   test('the Settings modal offers every language and the choice applies immediately', async ({ page }) => {

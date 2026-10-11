@@ -83,7 +83,7 @@ export function GrammarList({ points, progress, level, onLevelChange, onOpen }: 
                     ) : pr?.bestScore !== undefined ? (
                       <span className="text-xs text-slate-500 dark:text-slate-400">{t('grammar.list.best', { pct: Math.round(pr.bestScore * 100) })}</span>
                     ) : (
-                      <span className="text-xs text-slate-400">{t('topics.new')}</span>
+                      <span className="text-xs text-slate-500">{t('topics.new')}</span>
                     )}
                   </span>
                   <span className="mt-1 block font-semibold text-slate-900 dark:text-slate-100">

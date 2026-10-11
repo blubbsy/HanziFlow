@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Database, Download, QrCode, Trash2, Upload, X, Zap } from 'lucide-react';
 import type { Curriculum, PinyinHelperMode, Settings, StudyMode, ThemePref, UserState } from '../types';
 import { courseVars, getCourseConfig } from '../data/courses';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { ROTATION_PERCENTS, rotationCourseIds, rotationPercent } from '../utils/rotation';
 import { SPEECH_RATES, type SpeechApi } from '../utils/speech';
 import { createDefaultState, exportBackup, parseBackup, type StorageBackend } from '../utils/storage';
@@ -62,12 +63,7 @@ export function SettingsModal({
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    dialogRef.current?.focus();
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  useFocusTrap(dialogRef, onClose);
 
   async function handleImport(file: File) {
     try {
@@ -151,7 +147,7 @@ export function SettingsModal({
               })}
             </ul>
           )}
-          {onOpenCatalogue && (
+          {onOpenCatalogue && mixCourses.length === 0 && (
             <button
               type="button"
               onClick={onOpenCatalogue}
@@ -304,7 +300,7 @@ export function SettingsModal({
                   >
                     <span className="text-base">{p.icon}</span>
                     <span className="text-xs font-medium">{p.label}</span>
-                    <span className="text-[10px] text-slate-400 tabular-nums">+{p.newCards} / {p.dailyCap}</span>
+                    <span className="text-xs text-slate-500 tabular-nums">+{p.newCards} / {p.dailyCap}</span>
                   </button>
                 );
               })}
@@ -450,7 +446,7 @@ export function SettingsModal({
                 </div>
               </div>
               {syncKey && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> {t('settings.sync.badge')}
                 </span>
               )}
@@ -554,7 +550,7 @@ function RangeSlider({
         </span>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-[11px] font-semibold text-slate-400 tabular-nums">{min}</span>
+        <span className="text-xs font-semibold text-slate-500 tabular-nums">{min}</span>
         <input
           type="range"
           min={min}
@@ -569,7 +565,7 @@ function RangeSlider({
           }}
           className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 dark:bg-slate-700"
         />
-        <span className="text-[11px] font-semibold text-slate-400 tabular-nums">{max}</span>
+        <span className="text-xs font-semibold text-slate-500 tabular-nums">{max}</span>
       </div>
       {description && <p className="text-xs text-slate-500 dark:text-slate-400">{description}</p>}
     </div>

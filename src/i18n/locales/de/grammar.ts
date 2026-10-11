@@ -4,6 +4,7 @@ export const grammar: Partial<Record<keyof typeof en, string>> = {
   'grammar.tabs.aria': 'Grammatik-Bereiche',
   'grammar.tab.paths': 'Lernpfade',
   'grammar.tab.grammar': 'Grammatik',
+  'grammar.tab.topics': 'Themen',
   'grammar.backTo': 'Zurück zu {title}',
   'grammar.allGrammar': 'Alle Grammatik',
   'grammar.paths.syllabus': 'Lehrplan-Pfade',

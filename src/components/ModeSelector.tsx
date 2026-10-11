@@ -98,7 +98,7 @@ export function ModeSelector({ vocab, state, onStart }: Props) {
                   : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'
               }`}
             >
-              <Icon className={`h-5 w-5 ${active ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`} />
+              <Icon className={`h-5 w-5 ${active ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500'}`} />
               <div className="mt-1.5 font-semibold text-sm">{t(m.titleKey)}</div>
               <div className="text-xs leading-snug text-slate-500 dark:text-slate-400">{t(m.descKey)}</div>
             </button>

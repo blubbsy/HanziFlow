@@ -33,7 +33,7 @@ export function AudioButton({ speech, text, rate: rateOverride, size = 'sm', lab
   const active = speech.speakingText === text;
   if (!speech.supported) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-slate-400" title={t('study.audio.unsupportedTitle')}>
+      <span className="inline-flex items-center gap-1 text-xs text-slate-500" title={t('study.audio.unsupportedTitle')}>
         <VolumeX className="h-4 w-4" /> {t('study.audio.none')}
       </span>
     );

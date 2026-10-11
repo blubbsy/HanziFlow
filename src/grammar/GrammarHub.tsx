@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { BookText, GraduationCap, Route, Zap } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { BookText, GraduationCap, Layers, Route, Zap } from 'lucide-react';
 import type { CourseId, Curriculum, SessionRequest, UserState, VocabItem } from '../types';
 import type { SpeechApi } from '../utils/speech';
 import { getCourseConfig } from '../data/courses';
@@ -18,8 +18,10 @@ import { WikiView, type WikiUiState } from './WikiView';
 import { WIKI_CATEGORIES } from './wikiData';
 import { useI18n } from '../i18n/react';
 
-export type Tab = 'paths' | 'grammar' | 'wiki';
-const TABS: Tab[] = ['paths', 'grammar', 'wiki'];
+export type Tab = 'paths' | 'grammar' | 'wiki' | 'topics';
+const TABS: Tab[] = ['paths', 'grammar', 'wiki', 'topics'];
+/** Specialty courses have no grammar. */
+const WORD_TABS: Tab[] = ['paths', 'topics'];
 
 interface UiState {
   tab: Tab;
@@ -40,7 +42,7 @@ function loadUi(): UiState {
   try {
     const raw = JSON.parse(window.sessionStorage.getItem(UI_KEY) ?? 'null') as Partial<UiState> | null;
     if (!raw || typeof raw !== 'object') return DEFAULT_UI;
-    const tab: Tab = raw.tab === 'grammar' || raw.tab === 'wiki' ? raw.tab : 'paths';
+    const tab: Tab = raw.tab === 'grammar' || raw.tab === 'wiki' || raw.tab === 'topics' ? raw.tab : 'paths';
     // Validated against the (course-dependent) path list at render time.
     const pathId = typeof raw.pathId === 'string' ? raw.pathId : null;
     const level: LevelFilter = typeof raw.level === 'number' ? raw.level : 'all';
@@ -95,10 +97,12 @@ export interface GrammarHubProps {
   onOpenIrregularVerbs?: () => void;
   /** Active curriculum; syllabus paths are generated for its levels. */
   curriculum?: Curriculum;
+  /** Content of the Topics tab (topic training). */
+  topics?: ReactNode;
 }
 
 export function GrammarHub(props: GrammarHubProps): JSX.Element {
-  const { course, vocab, progress: vocabProgress, colorTones, speech, speechRate, onStartVocabSession, onOpenIrregularVerbs, curriculum = 'hsk3_2026' } = props;
+  const { course, vocab, progress: vocabProgress, colorTones, speech, speechRate, onStartVocabSession, onOpenIrregularVerbs, curriculum = 'hsk3_2026', topics } = props;
   const config = getCourseConfig(course);
   const hasGrammar = config.features.grammar;
   const english = config.track === 'english';
@@ -115,9 +119,9 @@ export function GrammarHub(props: GrammarHubProps): JSX.Element {
   const grammar = useGrammarProgress();
   const [stored, setUi] = useState<UiState>(loadUi);
   // Specialty courses only have paths; a remembered grammar/wiki tab of another course must not show up there.
-  const ui: UiState = hasGrammar ? stored : { ...stored, tab: 'paths', lesson: null };
-  const tabs: Tab[] = hasGrammar ? TABS : ['paths'];
-  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ paths: null, grammar: null, wiki: null });
+  const ui: UiState = hasGrammar ? stored : { ...stored, tab: stored.tab === 'topics' ? 'topics' : 'paths', lesson: null };
+  const tabs: Tab[] = (hasGrammar ? TABS : WORD_TABS).filter((tb) => tb !== 'topics' || topics);
+  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ paths: null, grammar: null, wiki: null, topics: null });
 
   useEffect(() => saveUi(stored), [stored]);
 
@@ -171,8 +175,8 @@ export function GrammarHub(props: GrammarHubProps): JSX.Element {
   const lessonPoint = found && found.track === config.track ? found : undefined;
   const lessonFromPath = ui.lesson?.from === 'paths' ? paths.find((p) => p.id === ui.pathId) : undefined;
 
-  const icons: Record<Tab, typeof Route> = { paths: Route, grammar: GraduationCap, wiki: BookText };
-  const labels: Record<Tab, string> = { paths: t('grammar.tab.paths'), grammar: t('grammar.tab.grammar'), wiki: t('grammar.tab.wiki') };
+  const icons: Record<Tab, typeof Route> = { paths: Route, grammar: GraduationCap, wiki: BookText, topics: Layers };
+  const labels: Record<Tab, string> = { paths: t('grammar.tab.paths'), grammar: t('grammar.tab.grammar'), wiki: t('grammar.tab.wiki'), topics: t('grammar.tab.topics') };
 
   const openWiki = (articleId: string) =>
     setUi((u) => ({ ...u, tab: 'wiki', lesson: null, enGuide: { ...u.enGuide, tab: 'wiki', query: '', category: 'all', article: articleId } }));
@@ -218,7 +222,7 @@ export function GrammarHub(props: GrammarHubProps): JSX.Element {
       )}
 
       <div role="tabpanel" id={`grammar-panel-${ui.tab}`} aria-labelledby={`grammar-tab-${ui.tab}`}>
-        {grammarLoading && ui.tab !== 'wiki' ? (
+        {grammarLoading && ui.tab !== 'wiki' && ui.tab !== 'topics' ? (
           <p role="status" className="py-10 text-center text-sm text-slate-500">
             {en.failed ? t('wiki.error') : t('common.loading')}
           </p>
@@ -235,6 +239,8 @@ export function GrammarHub(props: GrammarHubProps): JSX.Element {
             onSessionDone={(correct, total) => grammar.recordSession(lessonPoint.id, correct, total)}
             onOpenWiki={lessonPoint.wikiId ? () => openWiki(lessonPoint.wikiId!) : undefined}
           />
+        ) : ui.tab === 'topics' ? (
+          <>{topics}</>
         ) : ui.tab === 'paths' ? (
           <LearningPathsView
             paths={paths}

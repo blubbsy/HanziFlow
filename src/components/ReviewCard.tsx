@@ -159,7 +159,7 @@ function PinyinSuggestions({
               className="inline-flex items-center gap-0.5 rounded-lg border border-rose-300 bg-white px-2.5 py-1 text-sm font-semibold text-rose-900 shadow-sm transition hover:bg-rose-100 active:scale-95 dark:border-rose-700 dark:bg-slate-800 dark:text-rose-200"
             >
               <span>{toned}</span>
-              <span className="text-[10px] font-normal text-slate-400">({i + 1})</span>
+              <span className="text-xs font-normal text-slate-500">({i + 1})</span>
             </button>
           ))}
         </div>
@@ -189,8 +189,8 @@ function PinyinSuggestions({
       </div>
 
       {/* 3. Tone Accents Toolbar for manual letter insertion */}
-      <div className="flex flex-wrap items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
-        <span className="text-slate-400 dark:text-slate-500">{t('study.tones.accents')}</span>
+      <div className="flex flex-wrap items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+        <span className="text-slate-500 dark:text-slate-400">{t('study.tones.accents')}</span>
         {['ā', 'á', 'ǎ', 'à', 'ē', 'é', 'ě', 'è', 'ī', 'í', 'ǐ', 'ì', 'ō', 'ó', 'ǒ', 'ò', 'ū', 'ú', 'ǔ', 'ù', 'ü'].map((char) => (
           <button
             key={char}
@@ -501,7 +501,7 @@ export function ReviewCard({ card, vocab, progress, settings, speech, onGrade }:
             href={`https://github.com/blubbsy/Adilingo/issues/new?title=${encodeURIComponent(`[Vocab Issue] ${item.hanzi} (${item.id})`)}&body=${encodeURIComponent(`### Word Issue\nWord: ${item.hanzi} (${item.pinyin})\nID: ${item.id}\nIssue:\n`)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-600 dark:hover:text-slate-200"
             title={t('study.report.title')}
           >
             <Flag className="h-3.5 w-3.5" /> <span className="hidden sm:inline">{t('study.report')}</span>
@@ -566,7 +566,7 @@ export function ReviewCard({ card, vocab, progress, settings, speech, onGrade }:
 
                     {/* Stumbled notice if 1 mistake and not yet auto-shown */}
                     {!autoShowPinyin && failureCount > 0 && (
-                      <div className="mb-2 text-[11px] font-medium text-amber-600/90 dark:text-amber-400">
+                      <div className="mb-2 text-xs font-medium text-amber-600/90 dark:text-amber-400">
                         {t('card.stumbledNotice', { count: failureCount })}
                       </div>
                     )}
@@ -685,7 +685,7 @@ export function ReviewCard({ card, vocab, progress, settings, speech, onGrade }:
                   className={`flex min-h-12 items-center justify-between rounded-2xl border-2 px-4 py-2.5 text-left text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${btnStyle}`}
                 >
                   <span className={prompt === 'english' && /[\u4e00-\u9fa5]/.test(label) ? 'font-hanzi text-lg' : ''}>{label}</span>
-                  <kbd className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+                  <kbd className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-400">
                     {idx + 1}
                   </kbd>
                 </button>
@@ -745,7 +745,7 @@ export function ReviewCard({ card, vocab, progress, settings, speech, onGrade }:
                       {pinyinInput.trim() ? (
                         <PinyinDiffText typed={numberedToMarked(pinyinInput.trim())} target={item.pinyin} isCorrect={Boolean(isCorrect)} />
                       ) : (
-                        <span className="font-sans text-sm italic text-slate-400">{t('card.noAnswer')}</span>
+                        <span className="font-sans text-sm italic text-slate-500">{t('card.noAnswer')}</span>
                       )}
                     </div>
                   </div>
@@ -861,8 +861,8 @@ export function ReviewCard({ card, vocab, progress, settings, speech, onGrade }:
                       }`}
                     >
                       <div className="text-xs font-semibold">{t(`study.grade.${g}`)}</div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400">{t('common.interval.short', { days })}</div>
-                      <kbd className="mt-1 text-[10px] text-slate-400">[{g}]</kbd>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">{t('common.interval.short', { days })}</div>
+                      <kbd className="mt-1 text-xs text-slate-500">[{g}]</kbd>
                     </button>
                   );
                 })}
@@ -876,7 +876,7 @@ export function ReviewCard({ card, vocab, progress, settings, speech, onGrade }:
             <button
               type="button"
               onClick={handleRevealWithoutAnswer}
-              className="text-xs font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              className="text-xs font-medium text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
             >
               {t(prompt !== 'pinyin' ? 'card.revealAnswerKey' : 'card.revealAnswer')}
             </button>

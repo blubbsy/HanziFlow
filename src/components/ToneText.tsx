@@ -124,7 +124,7 @@ export function ToneContourIcon({ tone, className = 'h-3.5 w-3.5' }: { tone: Ton
 
 export function ToneBadge({ tone, withContour = true }: { tone: ToneKey; withContour?: boolean }) {
   return (
-    <span className={`inline-flex h-5 min-w-5 items-center justify-center gap-1 rounded px-1.5 text-[11px] font-semibold text-white ${TONE_BG_CLASS[tone]}`}>
+    <span className={`inline-flex h-5 min-w-5 items-center justify-center gap-1 rounded px-1.5 text-xs font-semibold text-white ${TONE_BG_CLASS[tone]}`}>
       <span>{tone === '0' ? '·' : tone}</span>
       {withContour && <ToneContourIcon tone={tone} className="h-2.5 w-2.5 stroke-white" />}
     </span>

@@ -46,11 +46,11 @@ export function GrammarLesson({ point, pointProgress, colorTones, speech, speech
         <div className="min-w-0">
           <div className="mb-1 flex flex-wrap items-center gap-2">
             <HskBadge level={point.hskLevel} track={point.track} />
-            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
               {t('grammar.lesson.unreviewed')}
             </span>
             {pointProgress?.completed && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
                 <CircleCheck className="h-3 w-3" aria-hidden /> {t('grammar.lesson.completed')}
               </span>
             )}
@@ -58,7 +58,7 @@ export function GrammarLesson({ point, pointProgress, colorTones, speech, speech
               <button
                 type="button"
                 onClick={onOpenWiki}
-                className={`rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 ${focusRing}`}
+                className={`rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 ${focusRing}`}
               >
                 {t('grammar.lesson.readWiki')}
               </button>
@@ -67,7 +67,7 @@ export function GrammarLesson({ point, pointProgress, colorTones, speech, speech
               href={`https://github.com/blubbsy/Adilingo/issues/new?title=${encodeURIComponent(`[Grammar] ${point.id}: ${point.title}`)}&body=${encodeURIComponent(`### Grammar Point: ${point.id} - ${point.title}\n\n**Issue Description:**\n\n**Suggested Correction:**\n`)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-auto inline-flex items-center gap-1 text-xs text-slate-400 underline hover:text-rose-600 dark:hover:text-rose-400"
+              className="ml-auto inline-flex items-center gap-1 text-xs text-slate-500 underline hover:text-rose-600 dark:hover:text-rose-400"
             >
               {t('grammar.lesson.report')}
             </a>
