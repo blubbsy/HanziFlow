@@ -12,6 +12,7 @@ import { ALL_VIEW_IDS, courseVars, effectiveCurriculum, fallbackView, getCourseC
 import { CourseSwitcher } from './components/CourseSwitcher';
 import { mobileNavItemsFor, navItemsFor, type NavItem } from './utils/navigation';
 import { Dashboard } from './components/Dashboard';
+import { Onboarding } from './components/Onboarding';
 import { StudySession } from './components/StudySession';
 import { Insights } from './components/Insights';
 import { Achievements } from './components/Achievements';
@@ -493,6 +494,10 @@ export default function App() {
       case 'achievements':
         return <Achievements vocab={vocab} state={state} />;
       default:
+        // First run: only the three-step setup, nothing else
+        if (!state.settings.onboarded && state.stats.totalReviewed === 0 && Object.keys(state.progress).length === 0) {
+          return <Onboarding state={state} vocab={vocab} onSwitchCourse={switchCourse} onUpdateState={(ns) => update(() => ns)} onStart={startSession} />;
+        }
         return (
           <Dashboard
             vocab={vocab}
@@ -500,7 +505,6 @@ export default function App() {
             onStart={startSession}
             onNavigate={navigate}
             onUpdateState={(ns) => update(() => ns)}
-            onOpenCourses={() => setShowSwitcher(true)}
             rotationSources={rotationSources}
             rotationFailed={rotationFailed}
           />
@@ -538,7 +542,7 @@ export default function App() {
     <I18nContext.Provider value={i18n}>
     <div className="min-h-dvh lg:flex">
       {/* Desktop / large tablet landscape: persistent sidebar */}
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-slate-200 bg-white px-4 py-5 lg:flex xl:w-72 dark:border-slate-800 dark:bg-slate-900">
+      <aside className={`sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-slate-200 bg-white px-4 py-5 xl:w-72 dark:border-slate-800 dark:bg-slate-900 ${studying ? '' : 'lg:flex'}`}>
         <div className="mb-4 px-2">
           <button onClick={() => navigate('home')} className="rounded-lg text-lg font-bold tracking-tight focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400" aria-label={t('app.home')}>
             Adilingo
@@ -594,7 +598,7 @@ export default function App() {
 
       <div className="min-w-0 flex-1">
         {/* Phones & tablets: top bar (with inline nav from md up) */}
-        <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-900/90">
+        <header className={`sticky top-0 z-40 border-b border-slate-200 bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-900/90 ${studying ? 'hidden' : ''}`}>
           <div className="mx-auto flex max-w-6xl items-center gap-1.5 px-3 py-2.5 sm:gap-2 sm:px-6">
             <button
               type="button"

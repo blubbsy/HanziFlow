@@ -119,6 +119,8 @@ export interface Settings {
   sessionSize?: number;
   /** Specialty courses mixed into the daily session, and how much of a session they take. */
   rotation?: RotationSettings;
+  /** The first-run flow was completed or skipped. */
+  onboarded?: boolean;
 }
 
 export interface RotationSettings {

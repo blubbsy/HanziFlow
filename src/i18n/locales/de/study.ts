@@ -58,6 +58,7 @@ export const study: Partial<Record<keyof typeof en, string>> = {
   'study.grade.2': 'Schwer',
   'study.grade.3': 'Gut',
   'study.grade.4': 'Leicht',
+  'card.newWordHint': 'Neues Wort: Pinyin wird angezeigt',
   'card.pinyinAlways': 'Pinyin immer sichtbar',
   'card.flipBackTitle': 'Zum Zurückdrehen klicken',
   'card.flipTitle': 'Klicken, um das Pinyin anzusehen',

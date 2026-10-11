@@ -23,7 +23,7 @@ import { useI18n } from '../i18n/react';
 import { ModeSelector } from './ModeSelector';
 import { PlacementTestModal } from './PlacementTestModal';
 import { BulkMarkModal } from './BulkMarkModal';
-import { courseVars, effectiveCurriculum, getCourseConfig } from '../data/courses';
+import { effectiveCurriculum, getCourseConfig } from '../data/courses';
 import { buildRotationCards, rotationQuota, type RotationSource } from '../utils/rotation';
 
 interface Props {
@@ -32,8 +32,6 @@ interface Props {
   onStart: (req: SessionRequest) => void;
   onNavigate: (view: 'learn' | 'irregular' | 'topics' | 'dictionary' | 'insights' | 'achievements') => void;
   onUpdateState: (newState: UserState) => void;
-  /** Opens the course switcher (shown in the first-run welcome). */
-  onOpenCourses: () => void;
   /** Loaded vocabulary of the courses in the daily mix. */
   rotationSources: RotationSource[];
   /** The daily mix could not be loaded. */
@@ -58,7 +56,6 @@ export function Dashboard({
   onStart,
   onNavigate,
   onUpdateState,
-  onOpenCourses,
   rotationSources,
   rotationFailed,
 }: Props) {
@@ -69,7 +66,7 @@ export function Dashboard({
 
   const courseConfig = getCourseConfig(state.settings.course);
   const i18n = useI18n();
-  const { t, rich, formatNumber, lang } = i18n;
+  const { t, rich, formatNumber } = i18n;
 
   const recs = useMemo(() => recommendations(state, vocab, new Date(), i18n), [state, vocab, i18n]);
   const levels = useMemo(() => accuracyByLevel(state, vocab), [state, vocab]);
@@ -77,7 +74,6 @@ export function Dashboard({
   const latency = averageLatencySec(state);
   const today = dailyLogFor(state).reviewed;
   const seen = useMemo(() => vocab.filter((v) => isWordStudied(state.progress[v.id])).length, [vocab, state.progress]);
-  const isNewLearner = state.stats.totalReviewed === 0 && seen === 0;
   const currentLevel = levels.find((l) => l.learned < l.words) ?? levels[levels.length - 1];
 
   const summary = useMemo(() => queueSummary(vocab, state), [vocab, state]);
@@ -149,26 +145,6 @@ export function Dashboard({
             latency={latency}
           />
         </section>
-
-        {/* First run: say where the learner is and what to do next */}
-        {isNewLearner && (
-          <section className={`${panel} border-sky-200 bg-sky-50/70 p-5 dark:border-sky-900/60 dark:bg-sky-950/30`} aria-labelledby="welcome-title">
-            <h2 id="welcome-title" className="text-lg font-bold">{t('welcome.title')}</h2>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{t('welcome.intro')}</p>
-            <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm text-slate-700 dark:text-slate-200">
-              <li>{t('welcome.step1', { name: t(courseConfig.cardTitleKey, courseVars(courseConfig, lang)) })}</li>
-              <li>{t('welcome.step2')}</li>
-              <li>{t('welcome.step3')}</li>
-            </ol>
-            <button
-              type="button"
-              onClick={onOpenCourses}
-              className="mt-4 rounded-xl border border-sky-300 bg-white px-4 py-2 text-sm font-semibold text-sky-800 hover:bg-sky-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 dark:border-sky-800 dark:bg-slate-800 dark:text-sky-200"
-            >
-              {t('welcome.changeCourse')}
-            </button>
-          </section>
-        )}
 
         {/* HERO: One Main Action - Today's Daily Plan */}
         <section className={`${panel} relative overflow-hidden p-6 sm:p-8 bg-gradient-to-br from-white via-white to-rose-50/40 dark:from-slate-800 dark:via-slate-800 dark:to-rose-950/20 shadow-sm`}>

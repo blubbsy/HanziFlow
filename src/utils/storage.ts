@@ -275,6 +275,7 @@ function sanitize(s: Raw): UserState {
         : (d.settings.pinyinHelperMode ?? 'adaptive'),
       pinyinAdaptiveThreshold: Math.min(10, Math.max(1, num(settings.pinyinAdaptiveThreshold, d.settings.pinyinAdaptiveThreshold ?? 2))),
       rotation: sanitizeRotation(settings.rotation),
+      onboarded: settings.onboarded === true ? true : undefined,
     },
     progress: activeProgress,
     courseProgress,

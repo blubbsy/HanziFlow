@@ -71,7 +71,7 @@ export function AudioButton({ speech, text, rate: rateOverride, size = 'sm', lab
         active
           ? 'border-rose-300 bg-rose-50 text-rose-600 dark:border-rose-700 dark:bg-rose-950/50 dark:text-rose-300'
           : 'border-slate-200 bg-white text-slate-600 hover:border-rose-300 hover:text-rose-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
-      } ${big ? 'px-6 py-4' : 'px-3 py-1.5'}`}
+      } focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${big ? 'px-6 py-4' : 'min-h-11 px-3 py-1.5 sm:min-h-0'}`}
     >
       <Volume2 className={big ? 'h-8 w-8' : 'h-4 w-4'} />
       <Wave active={active} big={big} />

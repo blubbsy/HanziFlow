@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { openSwitcher, selectCourse } from './helpers';
 
 test.use({ viewport: { width: 1280, height: 800 } });
@@ -76,7 +76,7 @@ test.describe('Daily mix', () => {
         'adilingo:state',
         JSON.stringify({
           version: 3,
-          settings: { course: 'chinese', uiLanguage: 'en', rotation: { courses: ['english:power-electronics'], percent: 25 } },
+          settings: { course: 'chinese', uiLanguage: 'en', onboarded: true, rotation: { courses: ['english:power-electronics'], percent: 25 } },
           progress: {},
           stats: { dailyByCourse: { chinese: { [today]: { reviewed: 999, correct: 999, newCards: 999 } } } },
         }),

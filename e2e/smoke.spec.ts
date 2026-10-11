@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { selectCourse } from './helpers';
 
 test.describe('Adilingo App Smoke', () => {

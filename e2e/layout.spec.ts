@@ -66,7 +66,7 @@ for (const course of ['chinese', 'english', 'chinese:emotor', 'english:power-ele
         await page.setViewportSize({ width: vp.width, height: vp.height });
         await page.addInitScript((c) => {
           // Start directly in the wanted course (state falls back to localStorage when IndexedDB is empty)
-          localStorage.setItem('adilingo:state', JSON.stringify({ version: 3, settings: { course: c, uiLanguage: 'en' }, progress: {} }));
+          localStorage.setItem('adilingo:state', JSON.stringify({ version: 3, settings: { course: c, uiLanguage: 'en', onboarded: true }, progress: {} }));
         }, course);
 
         const problems: string[] = [];

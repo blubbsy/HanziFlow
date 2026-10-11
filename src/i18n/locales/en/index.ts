@@ -11,6 +11,7 @@ import { errors } from './errors';
 import { grammar } from './grammar';
 import { insights } from './insights';
 import { modes } from './modes';
+import { onboarding } from './onboarding';
 import { placement } from './placement';
 import { recs } from './recs';
 import { settings } from './settings';
@@ -35,6 +36,7 @@ export const en = {
   ...grammar,
   ...insights,
   ...modes,
+  ...onboarding,
   ...placement,
   ...recs,
   ...settings,

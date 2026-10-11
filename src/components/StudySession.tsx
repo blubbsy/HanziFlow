@@ -119,7 +119,7 @@ export function StudySession({ request, initialCards, vocab, state, speech, cour
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between text-sm">
             <span className="truncate font-medium">{request.label}</span>
-            <span className="tabular-nums text-slate-500">
+            <span className="shrink-0 whitespace-nowrap pl-2 tabular-nums text-slate-500">
               {Math.min(index + 1, queue.length)} / {queue.length}
             </span>
           </div>

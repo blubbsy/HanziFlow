@@ -58,6 +58,7 @@ export const study: Record<keyof typeof en, string> = {
   'study.grade.2': '困难',
   'study.grade.3': '良好',
   'study.grade.4': '简单',
+  'card.newWordHint': '新词：已显示拼音',
   'card.pinyinAlways': '拼音常驻辅助已开启',
   'card.flipBackTitle': '点击翻回汉字',
   'card.flipTitle': '点击翻转查看拼音',

@@ -57,6 +57,7 @@ export const study = {
   'study.grade.3': 'Good',
   'study.grade.4': 'Easy',
   'card.pinyinAlways': 'Pinyin always visible',
+  'card.newWordHint': 'New word: pinyin shown',
   'card.flipBackTitle': 'Click to flip back',
   'card.flipTitle': 'Click to peek Pinyin',
   'card.ariaFlipped': 'Card flipped to Pinyin. Click to view the Chinese character.',

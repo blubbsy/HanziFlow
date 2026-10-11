@@ -299,7 +299,9 @@ export function ReviewCard({ card, vocab, progress, settings, speech, onGrade }:
   const pinyinHelperMode = settings.pinyinHelperMode ?? 'adaptive';
   const threshold = settings.pinyinAdaptiveThreshold ?? 2;
   const isAdaptiveTriggered = pinyinHelperMode === 'adaptive' && (failureCount >= threshold || Boolean(dirProgress?.isLeech));
-  const autoShowPinyin = isChineseWord && (pinyinHelperMode === 'always' || isAdaptiveTriggered);
+  // A word seen for the first time always comes with its pinyin: nobody can guess a reading they have never met
+  const isFirstSight = card.isNew && pinyinHelperMode !== 'never';
+  const autoShowPinyin = isChineseWord && (pinyinHelperMode === 'always' || isAdaptiveTriggered || isFirstSight);
   const allowFlip = isChineseWord && pinyinHelperMode !== 'never';
 
   // Play audio automatically for listening drill once per card (without self-cancellation on speech state changes)
@@ -470,7 +472,7 @@ export function ReviewCard({ card, vocab, progress, settings, speech, onGrade }:
 
   return (
     <div className="mx-auto max-w-2xl">
-      <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-8">
+      <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-8">
         {/* Header Badges */}
         <div className="flex items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-2">
@@ -520,7 +522,7 @@ export function ReviewCard({ card, vocab, progress, settings, speech, onGrade }:
             />
           </div>
         ) : (
-          <div className="my-8 text-center">
+          <div className="my-5 text-center sm:my-8">
             {prompt === 'audio' && (
               <div className="flex flex-col items-center">
                 <button
@@ -557,7 +559,7 @@ export function ReviewCard({ card, vocab, progress, settings, speech, onGrade }:
                       <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200/80 px-3 py-1 text-xs font-semibold text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200 shadow-sm animate-fade-in">
                         <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                         <span>
-                          {isAdaptiveTriggered ? t('card.adaptiveScaffold', { count: failureCount }) : t('card.pinyinAlways')}
+                          {isAdaptiveTriggered ? t('card.adaptiveScaffold', { count: failureCount }) : pinyinHelperMode === 'always' ? t('card.pinyinAlways') : t('card.newWordHint')}
                         </span>
                       </div>
                     )}
@@ -598,12 +600,6 @@ export function ReviewCard({ card, vocab, progress, settings, speech, onGrade }:
                             </div>
                           )}
 
-                          <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-slate-400 transition group-hover:text-rose-600 dark:text-slate-500 dark:group-hover:text-rose-400">
-                            <RotateCcw className="h-3 w-3" />
-                            <span>{t('card.tapToFlip')}</span>
-                            {/* i18n-ignore: key cap */}
-                            <kbd className="ml-1 hidden rounded bg-slate-200/70 px-1 py-0.5 text-[10px] text-slate-600 sm:inline dark:bg-slate-700 dark:text-slate-300">F</kbd>
-                          </div>
                         </div>
 
                         {/* BACK FACE: Pinyin, Tone Accents & Audio */}
@@ -664,7 +660,7 @@ export function ReviewCard({ card, vocab, progress, settings, speech, onGrade }:
 
         {/* Multiple Choice Answers */}
         {(prompt === 'hanzi' || prompt === 'english' || prompt === 'audio') && (
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5">
             {options.map((opt, idx) => {
               const label = prompt === 'english' ? opt.hanzi : opt.english.slice(0, 2).join('; ');
               let btnStyle =
@@ -686,7 +682,7 @@ export function ReviewCard({ card, vocab, progress, settings, speech, onGrade }:
                   type="button"
                   disabled={revealed}
                   onClick={() => handleAnswer(idx)}
-                  className={`flex items-center justify-between rounded-2xl border-2 px-4 py-3.5 text-left text-sm transition ${btnStyle}`}
+                  className={`flex min-h-12 items-center justify-between rounded-2xl border-2 px-4 py-2.5 text-left text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${btnStyle}`}
                 >
                   <span className={prompt === 'english' && /[\u4e00-\u9fa5]/.test(label) ? 'font-hanzi text-lg' : ''}>{label}</span>
                   <kbd className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-400">
