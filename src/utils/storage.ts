@@ -274,6 +274,7 @@ function sanitize(s: Raw): UserState {
         ? settings.pinyinHelperMode
         : (d.settings.pinyinHelperMode ?? 'adaptive'),
       pinyinAdaptiveThreshold: Math.min(10, Math.max(1, num(settings.pinyinAdaptiveThreshold, d.settings.pinyinAdaptiveThreshold ?? 2))),
+      rotation: sanitizeRotation(settings.rotation),
     },
     progress: activeProgress,
     courseProgress,
@@ -316,6 +317,13 @@ function sanitizeDaily(raw: unknown): UserState['stats']['daily'] {
     out[day] = { reviewed: num(log.reviewed, 0), correct: num(log.correct, 0), newCards: num(log.newCards, 0) };
   }
   return out;
+}
+
+/** Course ids stay as written (a newer build may know courses this one does not); unusable ones are dropped when the session is built. */
+function sanitizeRotation(raw: unknown): UserState['settings']['rotation'] {
+  if (!isObj(raw) || !Array.isArray(raw.courses)) return undefined;
+  const courses = [...new Set(raw.courses.filter((c): c is string => typeof c === 'string'))] as CourseId[];
+  return { courses, percent: Math.min(50, Math.max(10, num(raw.percent, 25))) };
 }
 
 function sanitizeDailyByCourse(raw: unknown): UserState['stats']['dailyByCourse'] {

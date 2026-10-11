@@ -175,6 +175,8 @@ export function isWordLearned(p: CardProgress | undefined): boolean {
 
 export interface ReviewEvent {
   item: VocabItem;
+  /** Course the card belongs to when it is not the active one (rotation cards). */
+  course?: CourseId;
   direction?: CardDirection;
   grade: Grade;
   correct: boolean;
@@ -192,7 +194,11 @@ export function recordReview(
   const today = dayKey(now);
   const isCorrect = ev.grade >= 2;
   const dir: CardDirection = ev.direction ?? 'recognition';
-  const wordProg: WordProgress = state.progress[ev.item.id] ?? {};
+  const activeCourse = state.settings.course ?? 'chinese';
+  const course = ev.course ?? activeCourse;
+  // Rotation cards live in their own course's progress, never in the active course's
+  const foreign = course !== activeCourse;
+  const wordProg: WordProgress = (foreign ? state.courseProgress?.[course] : state.progress)?.[ev.item.id] ?? {};
   const prevDir = wordProg[dir];
   const isNew = !prevDir;
   const learning = Boolean(opts.learningStep && prevDir);
@@ -240,7 +246,6 @@ export function recordReview(
   }
 
   const day = s.daily[today] ?? { reviewed: 0, correct: 0, newCards: 0 };
-  const course = state.settings.course ?? 'chinese';
   const dailyByCourse = { ...(s.dailyByCourse ?? {}) };
   const courseDailyMap = { ...(dailyByCourse[course] ?? {}) };
   const cDay = courseDailyMap[today] ?? { reviewed: 0, correct: 0, newCards: 0 };
@@ -253,11 +258,11 @@ export function recordReview(
 
   const latencyOk = ev.latencyMs > 0 && ev.latencyMs < 120_000;
 
-  const updatedProgress = { ...state.progress, [ev.item.id]: updatedWord };
+  const updatedProgress = foreign ? state.progress : { ...state.progress, [ev.item.id]: updatedWord };
   const updatedCourseProgress = {
     ...(state.courseProgress ?? {}),
     [course]: {
-      ...(state.courseProgress?.[course] ?? state.progress),
+      ...(state.courseProgress?.[course] ?? (foreign ? {} : state.progress)),
       [ev.item.id]: updatedWord,
     },
   };

@@ -8,6 +8,8 @@ interface Props {
   onChange: (lang: UiLanguage) => void;
   /** `popover`: button + menu; `compact`: short button for the top bar; `inline`: all options visible (Settings). */
   variant?: 'popover' | 'compact' | 'inline';
+  /** Open the menu above the button (for controls at the bottom of the screen). */
+  openUp?: boolean;
   className?: string;
 }
 
@@ -23,7 +25,7 @@ function LanguageName({ lang }: { lang: UiLanguage }) {
   );
 }
 
-export function LanguageMenu({ value, onChange, variant = 'popover', className = '' }: Props) {
+export function LanguageMenu({ value, onChange, variant = 'popover', openUp = false, className = '' }: Props) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -102,7 +104,9 @@ export function LanguageMenu({ value, onChange, variant = 'popover', className =
         <div
           role="menu"
           aria-label={t('lang.select')}
-          className="absolute right-0 z-50 mt-1 min-w-[10rem] overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg lg:left-0 lg:right-auto dark:border-slate-700 dark:bg-slate-800"
+          className={`absolute z-50 min-w-[10rem] overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800 ${
+            openUp ? 'bottom-full left-0 mb-1' : 'right-0 mt-1 lg:left-0 lg:right-auto'
+          }`}
         >
           {UI_LANGUAGES.map((lang) => {
             const selected = lang === value;

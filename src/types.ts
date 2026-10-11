@@ -117,6 +117,14 @@ export interface Settings {
   pinyinAdaptiveThreshold?: number;
   /** Number of cards per quick study session sprint (default: 15) */
   sessionSize?: number;
+  /** Specialty courses mixed into the daily session, and how much of a session they take. */
+  rotation?: RotationSettings;
+}
+
+export interface RotationSettings {
+  courses: CourseId[];
+  /** Share of a daily session (percent) that comes from the rotation courses. */
+  percent: number;
 }
 
 export interface UserState {
@@ -174,6 +182,8 @@ export interface SessionRequest {
    * They are added to the session pool; without this `wordIds` could never match them.
    */
   extraItems?: VocabItem[];
+  /** Daily session: also draw cards from the courses in `settings.rotation`. */
+  rotation?: boolean;
 }
 
 export interface SessionCard {
@@ -183,4 +193,6 @@ export interface SessionCard {
   isNew: boolean;
   /** In-session repeat of a card failed earlier in this session. */
   learningStep?: boolean;
+  /** Set for rotation cards that belong to another course than the active one. */
+  course?: CourseId;
 }

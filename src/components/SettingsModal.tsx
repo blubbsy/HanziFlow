@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Database, Download, QrCode, Trash2, Upload, X, Zap } from 'lucide-react';
-import type { CourseId, Curriculum, PinyinHelperMode, Settings, StudyMode, ThemePref, UserState } from '../types';
-import { courseVars, getCourseConfig, languageCourses } from '../data/courses';
+import type { Curriculum, PinyinHelperMode, Settings, StudyMode, ThemePref, UserState } from '../types';
+import { courseVars, getCourseConfig } from '../data/courses';
+import { ROTATION_PERCENTS, rotationCourseIds, rotationPercent } from '../utils/rotation';
 import { SPEECH_RATES, type SpeechApi } from '../utils/speech';
 import { createDefaultState, exportBackup, parseBackup, type StorageBackend } from '../utils/storage';
 import { createEmptyGrammarProgress, exportableGrammarProgress, importGrammarProgress, saveGrammarProgress } from '../grammar';
@@ -21,7 +22,6 @@ interface Props {
   onReplaceState: (s: UserState) => void;
   onClose: () => void;
   onOpenSyncModal: () => void;
-  onSwitchCourse?: (course: CourseId) => void;
   onOpenCatalogue?: () => void;
 }
 
@@ -48,12 +48,14 @@ export function SettingsModal({
   onReplaceState,
   onClose,
   onOpenSyncModal,
-  onSwitchCourse,
   onOpenCatalogue,
 }: Props) {
   const syncKey = getStoredSyncKey();
   const s = state.settings;
   const course = getCourseConfig(s.course);
+  const mixIds = s.rotation?.courses ?? [];
+  const mixPercent = rotationPercent(state);
+  const mixCourses = rotationCourseIds(state).map((id) => getCourseConfig(id));
   const { t, lang } = useI18n();
   const set = (patch: Partial<Settings>) => onChangeSettings({ ...s, ...patch });
   const fileRef = useRef<HTMLInputElement>(null);
@@ -106,41 +108,78 @@ export function SettingsModal({
         </div>
 
         <Group title={t('settings.group.course')}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label={t('settings.course')}>
-            {languageCourses().map((c) => {
-              const selected = course.id === c.id;
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => onSwitchCourse?.(c.id)}
-                  className={`rounded-xl border-2 p-3 text-left transition ${
-                    selected ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/40' : 'border-slate-200 hover:border-slate-300 dark:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{c.flag}</span>
-                    <span className="font-bold">{t(c.cardTitleKey)}</span>
-                  </div>
-                  <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">{t(c.cardSubtitleKey)}</span>
-                </button>
-              );
-            })}
+          <div className="flex items-center gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-600 font-hanzi text-xl font-bold text-white" aria-hidden>
+              {course.badge}
+            </span>
+            <span className="min-w-0 flex-1 font-semibold leading-snug">{t(course.cardTitleKey, courseVars(course, lang))}</span>
+            {onOpenCatalogue && (
+              <button
+                type="button"
+                onClick={onOpenCatalogue}
+                data-testid="settings-open-catalogue"
+                className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 dark:border-slate-600 dark:hover:bg-slate-700"
+              >
+                {t('switcher.change')}
+              </button>
+            )}
           </div>
+        </Group>
+
+        <Group title={t('settings.group.mix')}>
+          <p className="text-xs text-slate-500">{t('settings.mix.intro')}</p>
+          {mixCourses.length === 0 ? (
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{t('settings.mix.empty')}</p>
+          ) : (
+            <ul className="mt-2 space-y-1.5">
+              {mixCourses.map((c) => {
+                const label = t(c.nameKey, courseVars(c, lang));
+                return (
+                  <li key={c.id} className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-700">
+                    <span aria-hidden>{c.badge}</span>
+                    <span className="min-w-0 flex-1 text-sm font-medium leading-snug">{label}</span>
+                    <button
+                      type="button"
+                      onClick={() => set({ rotation: { courses: mixIds.filter((id) => id !== c.id), percent: mixPercent } })}
+                      aria-label={t('rotation.removeAria', { name: label })}
+                      className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 dark:text-slate-300 dark:hover:bg-slate-700"
+                    >
+                      {t('settings.mix.remove')}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
           {onOpenCatalogue && (
             <button
               type="button"
               onClick={onOpenCatalogue}
-              data-testid="settings-open-catalogue"
-              className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-left text-sm font-medium hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+              className="mt-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 dark:border-slate-600 dark:hover:bg-slate-700"
             >
-              {t('catalogue.open')}
-              {course.kind === 'specialty' && (
-                <span className="block text-xs font-normal text-slate-500">{t(course.cardTitleKey, courseVars(course, lang))}</span>
-              )}
+              {t('settings.mix.add')}
             </button>
+          )}
+          {mixCourses.length > 0 && (
+            <div className="mt-3" role="radiogroup" aria-label={t('settings.mix.share')}>
+              <p className="mb-1.5 text-xs text-slate-500">{t('settings.mix.share')}</p>
+              <div className="flex gap-2">
+                {ROTATION_PERCENTS.map((pc) => (
+                  <button
+                    key={pc}
+                    type="button"
+                    role="radio"
+                    aria-checked={mixPercent === pc}
+                    onClick={() => set({ rotation: { courses: mixIds, percent: pc } })}
+                    className={`rounded-lg border-2 px-3 py-1.5 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${
+                      mixPercent === pc ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/40' : 'border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    {t('settings.mix.percent', { percent: pc })}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </Group>
 

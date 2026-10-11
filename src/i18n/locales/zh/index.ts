@@ -17,6 +17,7 @@ import { recs } from './recs';
 import { settings } from './settings';
 import { shell } from './shell';
 import { study } from './study';
+import { switcher } from './switcher';
 import { sync } from './sync';
 import { topics } from './topics';
 import { wiki } from './wiki';
@@ -40,6 +41,7 @@ export const zh: Record<MessageKey, string> = {
   ...settings,
   ...shell,
   ...study,
+  ...switcher,
   ...sync,
   ...topics,
   ...wiki,

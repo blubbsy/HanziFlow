@@ -2,9 +2,8 @@ import { useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Award,
-  BookOpen,
   CheckCheck,
-  ChevronRight,
+  ChevronDown,
   Compass,
   Flame,
   Layers,
@@ -15,7 +14,6 @@ import {
   Target,
   Timer,
   Volume2,
-  Zap,
 } from 'lucide-react';
 import type { HskLevel, SessionRequest, UserState, VocabItem } from '../types';
 import { accuracyByLevel, averageLatencySec, calculateTrueRetention, recommendations, type Recommendation } from '../utils/analytics';
@@ -25,7 +23,8 @@ import { useI18n } from '../i18n/react';
 import { ModeSelector } from './ModeSelector';
 import { PlacementTestModal } from './PlacementTestModal';
 import { BulkMarkModal } from './BulkMarkModal';
-import { effectiveCurriculum, getCourseConfig } from '../data/courses';
+import { courseVars, effectiveCurriculum, getCourseConfig } from '../data/courses';
+import { buildRotationCards, rotationQuota, type RotationSource } from '../utils/rotation';
 
 interface Props {
   vocab: VocabItem[];
@@ -33,8 +32,12 @@ interface Props {
   onStart: (req: SessionRequest) => void;
   onNavigate: (view: 'learn' | 'irregular' | 'topics' | 'dictionary' | 'insights' | 'achievements') => void;
   onUpdateState: (newState: UserState) => void;
-  onOpenGrammarGuide?: () => void;
-  onOpenIrregularVerbs?: () => void;
+  /** Opens the course switcher (shown in the first-run welcome). */
+  onOpenCourses: () => void;
+  /** Loaded vocabulary of the courses in the daily mix. */
+  rotationSources: RotationSource[];
+  /** The daily mix could not be loaded. */
+  rotationFailed: boolean;
 }
 
 const REC_ICON: Record<Recommendation['kind'], typeof Flame> = {
@@ -55,17 +58,18 @@ export function Dashboard({
   onStart,
   onNavigate,
   onUpdateState,
-  onOpenGrammarGuide,
-  onOpenIrregularVerbs,
+  onOpenCourses,
+  rotationSources,
+  rotationFailed,
 }: Props) {
   const [showPlacementTest, setShowPlacementTest] = useState(false);
   const [showBulkMark, setShowBulkMark] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const [showCustomPractice, setShowCustomPractice] = useState(false);
 
   const courseConfig = getCourseConfig(state.settings.course);
-  const isEnglishCourse = courseConfig.track === 'english';
   const i18n = useI18n();
-  const { t, rich, formatNumber } = i18n;
+  const { t, rich, formatNumber, lang } = i18n;
 
   const recs = useMemo(() => recommendations(state, vocab, new Date(), i18n), [state, vocab, i18n]);
   const levels = useMemo(() => accuracyByLevel(state, vocab), [state, vocab]);
@@ -73,23 +77,31 @@ export function Dashboard({
   const latency = averageLatencySec(state);
   const today = dailyLogFor(state).reviewed;
   const seen = useMemo(() => vocab.filter((v) => isWordStudied(state.progress[v.id])).length, [vocab, state.progress]);
+  const isNewLearner = state.stats.totalReviewed === 0 && seen === 0;
   const currentLevel = levels.find((l) => l.learned < l.words) ?? levels[levels.length - 1];
 
   const summary = useMemo(() => queueSummary(vocab, state), [vocab, state]);
   const trueRet = useMemo(() => calculateTrueRetention(state), [state]);
 
   const activeDailyCount = Math.min(summary.dueCount + summary.newAvailable, summary.remainingToday);
+  const sessionBatchForMix = state.settings.sessionSize ?? 15;
+  const mixCount = useMemo(
+    () => buildRotationCards(rotationSources, state, rotationQuota(state, sessionBatchForMix)).length,
+    [rotationSources, state, sessionBatchForMix],
+  );
+  const hasDailyWork = activeDailyCount > 0 || mixCount > 0;
 
   const sessionBatch = state.settings.sessionSize ?? 15;
 
   function handleStartDailySession() {
-    if (activeDailyCount > 0) {
+    if (hasDailyWork) {
       onStart({
         label: t('dashboard.startSession'),
         mode: state.settings.defaultMode,
         levels: [],
         topics: [],
-        limit: Math.min(activeDailyCount, sessionBatch),
+        rotation: true,
+        limit: Math.min(activeDailyCount + mixCount, sessionBatch),
       });
     } else {
       // Extra practice
@@ -125,8 +137,9 @@ export function Dashboard({
     <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px]">
       <div className="min-w-0 space-y-6">
         {/* Metric tiles on mobile */}
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:hidden">
+        <section className="grid grid-cols-2 gap-3 xl:hidden">
           <Tiles
+            compact
             streak={streak}
             best={state.stats.longestStreak}
             today={today}
@@ -136,6 +149,26 @@ export function Dashboard({
             latency={latency}
           />
         </section>
+
+        {/* First run: say where the learner is and what to do next */}
+        {isNewLearner && (
+          <section className={`${panel} border-sky-200 bg-sky-50/70 p-5 dark:border-sky-900/60 dark:bg-sky-950/30`} aria-labelledby="welcome-title">
+            <h2 id="welcome-title" className="text-lg font-bold">{t('welcome.title')}</h2>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{t('welcome.intro')}</p>
+            <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm text-slate-700 dark:text-slate-200">
+              <li>{t('welcome.step1', { name: t(courseConfig.cardTitleKey, courseVars(courseConfig, lang)) })}</li>
+              <li>{t('welcome.step2')}</li>
+              <li>{t('welcome.step3')}</li>
+            </ol>
+            <button
+              type="button"
+              onClick={onOpenCourses}
+              className="mt-4 rounded-xl border border-sky-300 bg-white px-4 py-2 text-sm font-semibold text-sky-800 hover:bg-sky-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 dark:border-sky-800 dark:bg-slate-800 dark:text-sky-200"
+            >
+              {t('welcome.changeCourse')}
+            </button>
+          </section>
+        )}
 
         {/* HERO: One Main Action - Today's Daily Plan */}
         <section className={`${panel} relative overflow-hidden p-6 sm:p-8 bg-gradient-to-br from-white via-white to-rose-50/40 dark:from-slate-800 dark:via-slate-800 dark:to-rose-950/20 shadow-sm`}>
@@ -154,6 +187,8 @@ export function Dashboard({
                       new: (text) => <span className="text-slate-900 dark:text-slate-100">{text}</span>,
                     },
                   )
+                ) : mixCount > 0 ? (
+                  t('rotation.dashboardOnly', { count: mixCount })
                 ) : (
                   t('dashboard.allCaughtUp')
                 )}
@@ -165,8 +200,16 @@ export function Dashboard({
                       reviewed: summary.reviewedToday,
                       cap: state.settings.dailyCap,
                     })
-                  : t('dashboard.restMessage')}
+                  : mixCount > 0
+                    ? t('dashboard.estimatedTime', { min: Math.max(1, Math.round(mixCount * 0.4)), reviewed: summary.reviewedToday, cap: state.settings.dailyCap })
+                    : t('dashboard.restMessage')}
               </p>
+              {activeDailyCount > 0 && mixCount > 0 && (
+                <p className="mt-1 text-sm text-sky-700 dark:text-sky-300">{t('rotation.dashboard', { count: mixCount })}</p>
+              )}
+              {rotationFailed && (
+                <p role="alert" className="mt-1 text-sm text-amber-700 dark:text-amber-300">{t('rotation.loadError')}</p>
+              )}
             </div>
 
             <button
@@ -174,103 +217,84 @@ export function Dashboard({
               className="inline-flex items-center justify-center gap-2.5 rounded-2xl bg-rose-600 px-7 py-4 text-lg font-bold text-white shadow-xl shadow-rose-600/25 transition active:scale-[0.98] hover:bg-rose-700"
             >
               <Play className="h-5 w-5 fill-current" />
-              {activeDailyCount > 0
+              {hasDailyWork
                 ? t('dashboard.startSession')
                 : t('dashboard.extraPractice', { count: sessionBatch })}
             </button>
           </div>
 
-          {/* Special Quick Action Cards for English Track */}
-          {isEnglishCourse && (
-            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 border-t border-slate-100 pt-5 dark:border-slate-700/60">
-              {onOpenGrammarGuide && (
+          {/* Optional extras stay out of the way until asked for */}
+          <div className="mt-5 border-t border-slate-100 pt-3 dark:border-slate-700/60">
+            <button
+              type="button"
+              onClick={() => setShowMore((v) => !v)}
+              aria-expanded={showMore}
+              className="inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-sm font-medium text-slate-600 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 dark:text-slate-300 dark:hover:text-white"
+            >
+              <ChevronDown className={`h-4 w-4 transition-transform ${showMore ? 'rotate-180' : ''}`} aria-hidden />
+              {showMore ? t('dashboard.moreHide') : t('dashboard.more')}
+            </button>
+            {showMore && (
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
                 <button
-                  onClick={onOpenGrammarGuide}
-                  className="flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50/60 p-3.5 text-left transition hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/30"
+                  onClick={() => setShowCustomPractice((prev) => !prev)}
+                  aria-pressed={showCustomPractice}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-600 text-white shadow-sm">
-                    <BookOpen className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                      {t('dashboard.grammarHero')}
-                    </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                      {t('dashboard.grammarHeroDesc')}
-                    </div>
-                  </div>
+                  <SlidersHorizontal className="h-4 w-4 text-slate-400" aria-hidden />
+                  {showCustomPractice ? t('dashboard.hideCustomPractice') : t('dashboard.customPractice')}
                 </button>
-              )}
-
-              {onOpenIrregularVerbs && (
+                {courseConfig.features.placement && (
+                  <button
+                    onClick={() => setShowPlacementTest(true)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200"
+                  >
+                    <Award className="h-4 w-4 text-amber-500" aria-hidden />
+                    {t('dashboard.placementTest')}
+                  </button>
+                )}
                 <button
-                  onClick={onOpenIrregularVerbs}
-                  className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50/60 p-3.5 text-left transition hover:bg-amber-100 dark:border-amber-900/60 dark:bg-amber-950/30"
+                  onClick={() => setShowBulkMark(true)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm">
-                    <Zap className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                      {t('dashboard.irregularVerbsHero')}
-                    </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                      {t('dashboard.irregularHeroDesc')}
-                    </div>
-                  </div>
+                  <CheckCheck className="h-4 w-4 text-emerald-500" aria-hidden />
+                  {t('dashboard.bulkMark')}
                 </button>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
+        </section>
 
-          {/* Quick onboarding & level shortcuts */}
-          <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4 dark:border-slate-700/60 text-xs">
-            {courseConfig.views.includes('learn') && (
+        {/* Two clear next places to go */}
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {courseConfig.views.includes('learn') && (
             <button
               onClick={() => onNavigate('learn')}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50/70 px-3 py-2 font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-300"
+              className={`${panel} flex items-center gap-3 p-4 text-left transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400`}
             >
-              <Compass className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-              {t('dashboard.learningPaths')}
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+                <Compass className="h-5 w-5" aria-hidden />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-semibold">{t('dashboard.exploreLearn')}</span>
+                <span className="block text-xs text-slate-500 dark:text-slate-400">
+                  {t(courseConfig.features.grammar ? 'dashboard.exploreLearnDesc' : 'dashboard.explorePathsDesc')}
+                </span>
+              </span>
             </button>
-            )}
-
-            {courseConfig.features.placement && (
-            <button
-              onClick={() => setShowPlacementTest(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200"
-            >
-              <Award className="h-4 w-4 text-amber-500" />
-              {t('dashboard.placementTest')}
-            </button>
-            )}
-
-            <button
-              onClick={() => setShowBulkMark(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200"
-            >
-              <CheckCheck className="h-4 w-4 text-emerald-500" />
-              {t('dashboard.bulkMark')}
-            </button>
-
-            <button
-              onClick={() => onNavigate('topics')}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50/70 px-3 py-2 font-medium text-rose-700 hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
-            >
-              <Layers className="h-4 w-4 text-rose-600 dark:text-rose-400" />
-              {t('dashboard.topicTraining')}
-            </button>
-
-            <button
-              onClick={() => setShowCustomPractice((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200 ml-auto"
-            >
-              <SlidersHorizontal className="h-4 w-4 text-slate-400" />
-              {showCustomPractice
-                ? t('dashboard.hideCustomPractice')
-                : t('dashboard.customPractice')}
-            </button>
-          </div>
+          )}
+          <button
+            onClick={() => onNavigate('topics')}
+            className={`${panel} flex items-center gap-3 p-4 text-left transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400`}
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
+              <Layers className="h-5 w-5" aria-hidden />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-semibold">{t('dashboard.exploreTopics')}</span>
+              <span className="block text-xs text-slate-500 dark:text-slate-400">{t('dashboard.exploreTopicsDesc')}</span>
+            </span>
+          </button>
         </section>
 
         {/* Collapsible Custom Practice Panel */}
@@ -285,7 +309,7 @@ export function Dashboard({
           <section>
             <h2 className="mb-3 text-lg font-semibold">{t('dashboard.recommended')}</h2>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {recs.slice(0, 4).map((r) => {
+              {recs.slice(0, 2).map((r) => {
                 const Icon = REC_ICON[r.kind];
                 return (
                   <article key={r.id} className={`${panel} flex gap-3 p-4`}>
@@ -394,38 +418,6 @@ export function Dashboard({
               );
             })}
           </ul>
-
-          <div className="mt-5 flex flex-wrap gap-2">
-            {courseConfig.views.includes('learn') && (
-            <button
-              onClick={() => onNavigate('learn')}
-              className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-700 shadow-sm"
-            >
-              {t('dashboard.learningPaths')}{' '}
-              <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-            </button>
-            )}
-            {isEnglishCourse && (
-              <button
-                onClick={() => onOpenGrammarGuide?.()}
-                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-              >
-                {t('dashboard.grammarGuideBtn')}
-              </button>
-            )}
-            <button
-              onClick={() => onNavigate('topics')}
-              className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300"
-            >
-              {t('dashboard.topicTrainingBtn')} <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-            </button>
-            <button
-              onClick={() => setShowBulkMark(true)}
-              className="rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-medium hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-700"
-            >
-              {t('dashboard.bulkMarkLevels')}
-            </button>
-          </div>
         </section>
       </aside>
 
@@ -451,6 +443,7 @@ export function Dashboard({
 }
 
 function Tiles({
+  compact = false,
   streak,
   best,
   today,
@@ -459,6 +452,8 @@ function Tiles({
   matureTotal,
   latency,
 }: {
+  /** Only the two tiles that matter every day (streak, today's progress). */
+  compact?: boolean;
   streak: number;
   best: number;
   today: number;
@@ -485,7 +480,7 @@ function Tiles({
         sub={t('dashboard.ofGoal', { cap })}
         accent="text-rose-500"
       />
-      <Tile
+      {!compact && <Tile
         icon={Target}
         label={t('dashboard.trueRetention')}
         value={trueRetentionRate === null ? '—' : `${trueRetentionRate}%`}
@@ -496,14 +491,14 @@ function Tiles({
         }
         accent="text-emerald-500"
         title={t('dashboard.retentionTooltip')}
-      />
-      <Tile
+      />}
+      {!compact && <Tile
         icon={Timer}
         label={t('dashboard.speed')}
         value={latency === null ? '—' : t('study.summary.seconds', { value: latency.toFixed(1) })}
         sub={t('dashboard.perCard')}
         accent="text-sky-500"
-      />
+      />}
     </>
   );
 }

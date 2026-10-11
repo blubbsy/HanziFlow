@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { ArrowLeft, Maximize2, Minimize2, RotateCcw, Trophy, Undo2 } from 'lucide-react';
-import type { Grade, SessionCard, SessionRequest, UserState, VocabItem } from '../types';
+import type { CourseId, Grade, SessionCard, SessionRequest, UserState, VocabItem } from '../types';
+import { courseVars, getCourseConfig } from '../data/courses';
 import type { SpeechApi } from '../utils/speech';
 import { ReviewCard, type CardResult } from './ReviewCard';
 import { HanziText } from './ToneText';
@@ -14,6 +15,10 @@ interface Props {
   vocab: VocabItem[];
   state: UserState;
   speech: SpeechApi;
+  /** Vocabulary of the rotation courses (cards that belong to another course use their own). */
+  courseVocab?: Partial<Record<CourseId, VocabItem[]>>;
+  /** Speech engine with the right voice for a course. */
+  speechFor?: (course: CourseId) => SpeechApi;
   onReview: (card: SessionCard, grade: Grade, result: CardResult, learningStep: boolean) => void;
   /** Restores the user state from before the last grade. */
   onUndo: () => void;
@@ -31,8 +36,8 @@ interface Outcome {
 /** Number of cards before a failed card comes back within the same session. */
 const REQUEUE_GAP = 3;
 
-export function StudySession({ request, initialCards, vocab, state, speech, onReview, onUndo, onExit, onRestart }: Props) {
-  const { t } = useI18n();
+export function StudySession({ request, initialCards, vocab, state, speech, courseVocab, speechFor, onReview, onUndo, onExit, onRestart }: Props) {
+  const { t, lang } = useI18n();
   const [queue, setQueue] = useState<SessionCard[]>(initialCards);
   const [index, setIndex] = useState(0);
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
@@ -143,15 +148,23 @@ export function StudySession({ request, initialCards, vocab, state, speech, onRe
       </div>
 
       {!done && current && (
-        <ReviewCard
-          key={`${index}-${current.item.id}`}
-          card={current}
-          vocab={vocab}
-          progress={state.progress[current.item.id]}
-          settings={state.settings}
-          speech={speech}
-          onGrade={handleGrade}
-        />
+        <>
+          {current.course && (
+            <p className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-800 dark:bg-sky-950/60 dark:text-sky-200">
+              <span aria-hidden>{getCourseConfig(current.course).badge}</span>
+              {t('rotation.cardTag', { name: t(getCourseConfig(current.course).cardTitleKey, courseVars(getCourseConfig(current.course), lang)) })}
+            </p>
+          )}
+          <ReviewCard
+            key={`${index}-${current.item.id}`}
+            card={current}
+            vocab={current.course ? (courseVocab?.[current.course] ?? vocab) : vocab}
+            progress={(current.course ? state.courseProgress?.[current.course] : state.progress)?.[current.item.id]}
+            settings={current.course ? { ...state.settings, course: current.course } : state.settings}
+            speech={current.course && speechFor ? speechFor(current.course) : speech}
+            onGrade={handleGrade}
+          />
+        </>
       )}
 
       {done && <Summary outcomes={outcomes} onExit={onExit} onRestart={onRestart} soundEffects={state.settings.soundEffects} />}

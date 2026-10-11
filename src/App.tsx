@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Flame, Languages, Layers, Loader2, Settings as SettingsIcon, Zap } from 'lucide-react';
-import type { Grade, SessionCard, SessionRequest, Settings, UserState } from './types';
+import { ArrowLeft, ChevronsUpDown, Flame, Loader2, Settings as SettingsIcon, Zap } from 'lucide-react';
+import type { Grade, SessionCard, SessionRequest, Settings, UserState, VocabItem } from './types';
 import { useUserState } from './hooks/useUserState';
 import { useSpeech } from './utils/speech';
 import { buildSession, effectiveStreak, recordReview } from './utils/srsEngine';
+import { buildRotationCards, interleaveCards, rotationCourseIds, rotationQuota, type RotationSource } from './utils/rotation';
 import { newlyUnlocked, type Badge } from './utils/analytics';
 import { loadLibrary, vocabForCurriculum, type VocabLibrary } from './data/vocab';
-import { ALL_VIEW_IDS, courseVars, effectiveCurriculum, fallbackView, getCourseConfig, isViewAvailable, languageCourses, type CourseId, type ViewId } from './data/courses';
-import { parseDomainCourse } from './data/domains';
-import { CourseCatalogue } from './components/CourseCatalogue';
+import { ALL_VIEW_IDS, courseVars, effectiveCurriculum, fallbackView, getCourseConfig, isViewAvailable, type CourseId, type ViewId } from './data/courses';
+import { CourseSwitcher } from './components/CourseSwitcher';
 import { mobileNavItemsFor, navItemsFor, type NavItem } from './utils/navigation';
 import { Dashboard } from './components/Dashboard';
 import { StudySession } from './components/StudySession';
@@ -25,7 +25,7 @@ import { LanguageMenu } from './components/LanguageMenu';
 import { describeMessage } from './i18n/errors';
 import { badgeTitle } from './utils/badgeText';
 import type { CardResult } from './components/ReviewCard';
-import { GrammarHub, presetGrammarTab } from './grammar';
+import { GrammarHub } from './grammar';
 import {
   getStoredSyncKey,
   setStoredSyncKey,
@@ -71,12 +71,15 @@ export default function App() {
     [update],
   );
   const speech = useSpeech(state.settings.speechRate, courseConfig.speechVoiceLang, handleSpeechRateChange);
+  // Rotation cards can belong to the other language track and need that track's voice
+  const altVoiceLang = courseConfig.speechVoiceLang === 'en' ? 'zh' : 'en';
+  const altSpeech = useSpeech(state.settings.speechRate, altVoiceLang, handleSpeechRateChange);
   const [library, setLibrary] = useState<VocabLibrary | null>(null);
   const [libraryError, setLibraryError] = useState<string | null>(null);
   const [view, setView] = useState<View>(viewFromHash);
   const [session, setSession] = useState<{ request: SessionRequest; cards: SessionCard[]; key: number; returnTo: View } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [showCatalogue, setShowCatalogue] = useState(false);
+  const [showSwitcher, setShowSwitcher] = useState(false);
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [toasts, setToasts] = useState<Badge[]>([]);
   const undoSnapshot = useRef<UserState | null>(null);
@@ -211,6 +214,51 @@ export default function App() {
     };
   }, [activeCourse]);
 
+  // Vocabulary of the courses mixed into the daily session (loaded on demand, only for the courses chosen)
+  const rotationIds = rotationCourseIds(state);
+  const rotationKey = rotationIds.join('|');
+  const [rotationLibs, setRotationLibs] = useState<Partial<Record<CourseId, VocabItem[]>>>({});
+  const [rotationFailed, setRotationFailed] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    setRotationFailed(false);
+    Promise.all(
+      rotationKey
+        ? (rotationKey.split('|') as CourseId[]).map(async (id) => {
+            const lib = await loadLibrary(id);
+            return [id, vocabForCurriculum(lib, getCourseConfig(id).defaultCurriculum)] as const;
+          })
+        : [],
+    )
+      .then((pairs) => {
+        if (!cancelled) setRotationLibs(Object.fromEntries(pairs));
+      })
+      .catch((err) => {
+        console.warn('Rotation vocabulary could not be loaded:', err);
+        if (!cancelled) {
+          setRotationLibs({});
+          setRotationFailed(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [rotationKey]);
+  const rotationSources = useMemo<RotationSource[]>(
+    () => (rotationKey.split('|') as CourseId[]).filter((id) => id && rotationLibs[id]).map((id) => ({ course: id, vocab: rotationLibs[id] ?? [] })),
+    [rotationKey, rotationLibs],
+  );
+
+  const toggleMix = useCallback(
+    (id: CourseId) =>
+      update((s) => {
+        const current = s.settings.rotation?.courses ?? [];
+        const courses = current.includes(id) ? current.filter((c) => c !== id) : [...current, id];
+        return { ...s, settings: { ...s.settings, rotation: { courses, percent: s.settings.rotation?.percent ?? 25 } } };
+      }),
+    [update],
+  );
+
   // Course switching logic with route sanitization
   const switchCourse = useCallback(
     (newCourse: CourseId) => {
@@ -306,9 +354,13 @@ export default function App() {
 
   const startSession = useCallback(
     (request: SessionRequest) => {
+      // The daily session may borrow a share of its cards from the specialty courses in the rotation
+      const limit = request.limit ?? state.settings.sessionSize ?? 15;
+      const rotationCards = request.rotation ? buildRotationCards(rotationSources, state, rotationQuota(state, limit)) : [];
+      const mainCards = buildSession(vocab, state, { ...request, limit: Math.max(0, limit - rotationCards.length) });
       setSession((prev) => ({
         request,
-        cards: buildSession(vocab, state, request),
+        cards: interleaveCards(mainCards, rotationCards),
         key: Date.now(),
         returnTo: view === 'study' ? (prev?.returnTo ?? 'home') : view,
       }));
@@ -316,7 +368,7 @@ export default function App() {
       if (window.location.hash !== '#/study') window.location.hash = '/study';
       window.scrollTo({ top: 0 });
     },
-    [state, view, vocab],
+    [state, view, vocab, rotationSources],
   );
 
   const handleReview = useCallback(
@@ -325,7 +377,7 @@ export default function App() {
         undoSnapshot.current = s;
         return recordReview(
           s,
-          { item: card.item, direction: card.direction, grade, correct: result.correct, prompt: card.prompt, latencyMs: result.latencyMs },
+          { item: card.item, course: card.course, direction: card.direction, grade, correct: result.correct, prompt: card.prompt, latencyMs: result.latencyMs },
           new Date(),
           { learningStep },
         );
@@ -353,6 +405,8 @@ export default function App() {
   );
 
   const streak = effectiveStreak(state);
+  const courseName = t(courseConfig.cardTitleKey, courseVars(courseConfig, lang));
+  const baseCourse = getCourseConfig(courseConfig.track);
 
   useEffect(() => {
     if (view === 'study' && !session) navigate('home');
@@ -385,6 +439,8 @@ export default function App() {
             vocab={vocab}
             state={state}
             speech={speech}
+            courseVocab={rotationLibs}
+            speechFor={(c) => (getCourseConfig(c).speechVoiceLang === courseConfig.speechVoiceLang ? speech : altSpeech)}
             onReview={handleReview}
             onUndo={handleUndo}
             onExit={() => navigate(session.returnTo === 'study' ? 'home' : session.returnTo)}
@@ -438,15 +494,13 @@ export default function App() {
             onStart={startSession}
             onNavigate={navigate}
             onUpdateState={(ns) => update(() => ns)}
-            onOpenGrammarGuide={() => {
-              presetGrammarTab('wiki');
-              navigate('learn');
-            }}
-            onOpenIrregularVerbs={() => navigate('irregular')}
+            onOpenCourses={() => setShowSwitcher(true)}
+            rotationSources={rotationSources}
+            rotationFailed={rotationFailed}
           />
         );
     }
-  }, [libraryError, loaded, library, shownView, session, vocab, state, speech, handleReview, handleUndo, handleToggleStar, navigate, startSession, curriculum, update, courseConfig.track, t]);
+  }, [libraryError, loaded, library, shownView, session, vocab, state, speech, handleReview, handleUndo, handleToggleStar, navigate, startSession, curriculum, update, courseConfig.track, courseConfig.speechVoiceLang, altSpeech, rotationLibs, rotationSources, rotationFailed, t]);
 
   // Navigation is derived from the views the active course declares
   const navItems = useMemo(() => navItemsFor(activeCourse, lang), [activeCourse, lang]);
@@ -479,58 +533,29 @@ export default function App() {
     <div className="min-h-dvh lg:flex">
       {/* Desktop / large tablet landscape: persistent sidebar */}
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-slate-200 bg-white px-4 py-5 lg:flex xl:w-72 dark:border-slate-800 dark:bg-slate-900">
-        <div className="mb-4 flex items-center justify-between px-2">
-          <button onClick={() => navigate('home')} className="flex items-center gap-3" aria-label={t('app.home')}>
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-600 font-hanzi text-2xl font-bold text-white">
-              {courseConfig.badge}
-            </span>
-            <span className="text-left">
-              <span className="block text-lg font-bold leading-tight tracking-tight">Adilingo</span>
-              <span className="block text-xs text-slate-500">{t(courseConfig.nativeKey, courseVars(courseConfig, lang))}</span>
-            </span>
+        <div className="mb-4 px-2">
+          <button onClick={() => navigate('home')} className="rounded-lg text-lg font-bold tracking-tight focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400" aria-label={t('app.home')}>
+            Adilingo
           </button>
         </div>
 
-        {/* Course Track Switcher Tab */}
-        <div className="mb-3 rounded-2xl bg-slate-100 p-1 dark:bg-slate-800">
-          <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${languageCourses().length}, minmax(0, 1fr))` }}>
-            {languageCourses().map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => switchCourse(c.id)}
-                data-course={c.id}
-                aria-pressed={activeCourse === c.id}
-                className={`flex items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-semibold transition ${
-                  activeCourse === c.id
-                    ? 'bg-white shadow text-slate-900 dark:bg-slate-700 dark:text-white'
-                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
-                }`}
-              >
-                <span>{c.flag}</span>
-                <span>{t(c.switcherKey)}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
+        {/* The one place to see and change the course */}
         <button
           type="button"
-          onClick={() => setShowCatalogue(true)}
-          data-testid="open-catalogue"
-          className="mb-3 flex w-full items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-left text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+          onClick={() => setShowSwitcher(true)}
+          data-testid="open-switcher"
+          aria-label={t('switcher.button', { name: courseName })}
+          className="mb-5 flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-2.5 text-left transition hover:border-slate-300 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
         >
-          <Layers className="h-4 w-4 shrink-0" aria-hidden />
-          <span className="min-w-0 flex-1 truncate">{t('catalogue.open')}</span>
-        </button>
-
-        {/* UI Language Quick Switcher */}
-        <div className="mb-4 flex items-center justify-between px-2 text-xs text-slate-500">
-          <span className="flex items-center gap-1.5 font-medium">
-            <Languages className="h-3.5 w-3.5" /> {t('header.lang')}
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-600 font-hanzi text-xl font-bold text-white" aria-hidden>
+            {courseConfig.badge}
           </span>
-          <LanguageMenu value={wantedLang} onChange={setUiLanguage} />
-        </div>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs text-slate-500">{t('switcher.change')}</span>
+            <span className="block text-sm font-semibold leading-snug">{courseName}</span>
+          </span>
+          <ChevronsUpDown className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+        </button>
 
         <nav className="flex flex-col gap-1 overflow-y-auto" aria-label={t('app.mainNav')}>
           {navItems.map((n) => navButton(n, 'side'))}
@@ -540,23 +565,24 @@ export default function App() {
             <Flame className="h-5 w-5" aria-hidden />
             <span className="text-sm font-semibold">{t('app.streak', { count: streak })}</span>
           </div>
-          <button
-            onClick={() => setShowSyncModal(true)}
-            className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-[14px] font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            <span className="flex items-center gap-3">
-              <Zap className="h-5 w-5 text-rose-500" aria-hidden /> {t('header.sync')}
-            </span>
-            {getStoredSyncKey() && (
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" title={t('app.syncActive')} />
-            )}
-          </button>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            <SettingsIcon className="h-5 w-5" aria-hidden /> {t('nav.settings')}
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowSettings(true)}
+              className="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-slate-600 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              <SettingsIcon className="h-5 w-5 shrink-0" aria-hidden /> <span className="truncate">{t('nav.settings')}</span>
+            </button>
+            <button
+              onClick={() => setShowSyncModal(true)}
+              className="relative rounded-xl p-2.5 text-slate-600 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 dark:text-slate-300 dark:hover:bg-slate-800"
+              aria-label={t('app.cloudSync')}
+              title={t('app.cloudSync')}
+            >
+              <Zap className="h-5 w-5 text-rose-500" aria-hidden />
+              {getStoredSyncKey() && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-emerald-500" title={t('app.syncActive')} />}
+            </button>
+            <LanguageMenu variant="compact" openUp value={wantedLang} onChange={setUiLanguage} />
+          </div>
         </div>
       </aside>
 
@@ -564,30 +590,19 @@ export default function App() {
         {/* Phones & tablets: top bar (with inline nav from md up) */}
         <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-900/90">
           <div className="mx-auto flex max-w-6xl items-center gap-1.5 px-3 py-2.5 sm:gap-2 sm:px-6">
-            <button onClick={() => navigate('home')} className="flex items-center gap-2" aria-label={t('app.home')}>
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-600 font-hanzi text-xl font-bold text-white">
-                {courseConfig.badge}
-              </span>
-              <span className="hidden text-base font-bold tracking-tight sm:inline md:hidden">Adilingo</span>
-            </button>
-
             <button
               type="button"
-              onClick={() => {
-                const list = languageCourses();
-                // A specialty course returns to its language course first, a language course cycles on
-                const base = parseDomainCourse(activeCourse);
-                if (base) switchCourse(base.track);
-                else switchCourse(list[(list.findIndex((c) => c.id === activeCourse) + 1) % list.length].id);
-              }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
-              title={t('app.switchCourse', { name: t(courseConfig.nameKey, courseVars(courseConfig, lang)) })}
+              onClick={() => setShowSwitcher(true)}
+              data-testid="open-switcher"
+              aria-label={t('switcher.button', { name: courseName })}
+              className="flex min-w-0 max-w-[55%] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 py-1 pl-1 pr-2 text-left hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 sm:max-w-xs dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
             >
-              <span>{courseConfig.flag}</span>
-              <span>{courseConfig.chipLabel}</span>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-600 font-hanzi text-lg font-bold text-white" aria-hidden>
+                {courseConfig.badge}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold">{courseName}</span>
+              <ChevronsUpDown className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
             </button>
-
-            <LanguageMenu variant="compact" value={wantedLang} onChange={setUiLanguage} />
 
             <nav className="ml-2 hidden flex-1 gap-1 overflow-x-auto md:flex" aria-label={t('app.mainNav')}>
               {navItems.map((n) => navButton(n, 'top'))}
@@ -595,9 +610,10 @@ export default function App() {
             <span className="ml-auto inline-flex items-center gap-1 text-sm font-semibold tabular-nums text-orange-500 md:ml-0" title={t('app.streak', { count: streak })}>
               <Flame className="h-5 w-5" aria-hidden /> {streak}
             </span>
+            <LanguageMenu variant="compact" value={wantedLang} onChange={setUiLanguage} className="hidden md:block" />
             <button
               onClick={() => setShowSyncModal(true)}
-              className="rounded-lg p-1.5 text-slate-600 hover:bg-slate-100 sm:p-2 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="hidden rounded-lg p-1.5 text-slate-600 hover:bg-slate-100 sm:p-2 md:inline-flex dark:text-slate-300 dark:hover:bg-slate-800"
               aria-label={t('app.cloudSync')}
               title={t('app.cloudSync')}
             >
@@ -615,6 +631,29 @@ export default function App() {
               <span>{describeMessage(t, loadWarning)}</span>
               <button onClick={allowSave} className="mt-2 rounded-lg bg-amber-600 px-3 py-1.5 font-medium text-white hover:bg-amber-700">
                 {t('app.startFresh')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {courseConfig.kind === 'specialty' && !studying && (
+          <div role="region" aria-label={t('switcher.banner', { name: courseName })} className="border-b border-sky-200 bg-sky-50 px-4 py-2.5 text-sm text-sky-900 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-100">
+            <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="min-w-0 flex-1 font-medium">{t('switcher.banner', { name: courseName })}</span>
+              <button
+                type="button"
+                onClick={() => switchCourse(courseConfig.track)}
+                data-testid="back-to-language-course"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 px-3 py-1.5 font-semibold text-white hover:bg-sky-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+              >
+                <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden /> {t('switcher.banner.back', { name: t(baseCourse.cardTitleKey) })}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowSwitcher(true)}
+                className="rounded-lg px-3 py-1.5 font-semibold underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+              >
+                {t('switcher.banner.browse')}
               </button>
             </div>
           </div>
@@ -657,15 +696,17 @@ export default function App() {
         </nav>
       )}
 
-      {showCatalogue && (
-        <CourseCatalogue
+      {showSwitcher && (
+        <CourseSwitcher
           state={state}
           activeCourse={activeCourse}
           onSelect={(id) => {
             switchCourse(id);
-            setShowCatalogue(false);
+            setShowSwitcher(false);
           }}
-          onClose={() => setShowCatalogue(false)}
+          mix={state.settings.rotation?.courses ?? []}
+          onToggleMix={toggleMix}
+          onClose={() => setShowSwitcher(false)}
         />
       )}
 
@@ -675,10 +716,9 @@ export default function App() {
           backend={backend}
           speech={speech}
           onChangeSettings={(settings: Settings) => update((s) => ({ ...s, settings }))}
-          onSwitchCourse={switchCourse}
           onOpenCatalogue={() => {
             setShowSettings(false);
-            setShowCatalogue(true);
+            setShowSwitcher(true);
           }}
           onReplaceState={(s) => {
             replace(s);

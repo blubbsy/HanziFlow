@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { selectCourse } from './helpers';
 
 test.describe('Adilingo App Smoke', () => {
   test('loads home dashboard and navigation successfully', async ({ page }) => {
@@ -16,7 +17,7 @@ test.describe('Audio speed control', () => {
     test(`speed can be changed inside a study session (${course})`, async ({ page }) => {
       await page.goto('/');
       if (course === 'english') {
-        await page.locator('[data-course="english"]').first().click();
+        await selectCourse(page, 'english');
       }
       await page.getByRole('button', { name: /start today's session|开始今日/i }).first().click();
 
@@ -44,7 +45,7 @@ test.describe('Topic training', () => {
     test(`a topic practice session always has cards (${course})`, async ({ page }) => {
       await page.goto('/');
       if (course === 'english') {
-        await page.locator('[data-course="english"]').first().click();
+        await selectCourse(page, 'english');
       }
       await page.goto('/#/topics');
       await page.getByRole('button', { name: 'Practice', exact: true }).first().click();
@@ -65,7 +66,7 @@ test.describe('Course routing', () => {
     await expect(page).toHaveURL(/#\/learn$/);
 
     // English course: both screens exist
-    await page.locator('[data-course="english"]').first().click();
+    await selectCourse(page, 'english');
     await page.goto('/#/irregular');
     await expect(page).toHaveURL(/#\/irregular$/);
     await expect(page.getByRole('navigation', { name: 'Main' }).first()).toBeVisible();
@@ -73,10 +74,10 @@ test.describe('Course routing', () => {
 
   test('switching to Chinese while on an English-only screen lands on the learn screen', async ({ page }) => {
     await page.goto('/');
-    await page.locator('[data-course="english"]').first().click();
+    await selectCourse(page, 'english');
     await page.goto('/#/irregular');
     await expect(page).toHaveURL(/#\/irregular$/);
-    await page.locator('[data-course="chinese"]').first().click();
+    await selectCourse(page, 'chinese');
     await expect(page).toHaveURL(/#\/learn$/);
     await expect(page.getByRole('tab', { name: 'Learning Paths' })).toBeVisible();
   });
@@ -84,7 +85,7 @@ test.describe('Course routing', () => {
 
 test('an English-only deep link survives a reload (guard waits for the saved course)', async ({ page }) => {
   await page.goto('/');
-  await page.locator('[data-course="english"]').first().click();
+  await selectCourse(page, 'english');
   await page.goto('/#/irregular');
   await page.waitForTimeout(900); // settings are saved with a 400 ms debounce
   await page.reload();
@@ -142,7 +143,7 @@ test.describe('No untranslated keys on screen', () => {
     for (const course of ['chinese', 'english'] as const) {
       test(`${course} course in ${lang}`, async ({ page }) => {
         await page.goto('/');
-        if (course === 'english') await page.locator('[data-course="english"]').first().click();
+        if (course === 'english') await selectCourse(page, 'english');
         await page.getByRole('button', { name: /^(Interface language|Oberflächensprache|界面语言)$/ }).first().click();
         await page.getByRole('menuitemradio', { name: new RegExp(lang) }).click();
         await page.waitForTimeout(300);
