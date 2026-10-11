@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { Database, Download, QrCode, Trash2, Upload, X, Zap } from 'lucide-react';
+import { ChevronDown, Database, Download, QrCode, Trash2, Upload, X, Zap } from 'lucide-react';
 import type { Curriculum, PinyinHelperMode, Settings, StudyMode, ThemePref, UserState } from '../types';
 import { courseVars, getCourseConfig } from '../data/courses';
 import { useFocusTrap } from '../hooks/useFocusTrap';
@@ -103,6 +103,7 @@ export function SettingsModal({
           </button>
         </div>
 
+        <Section title={t('settings.section.course')} defaultOpen>
         <Group title={t('settings.group.course')}>
           <div className="flex items-center gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-700">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-600 font-hanzi text-xl font-bold text-white" aria-hidden>
@@ -179,11 +180,9 @@ export function SettingsModal({
           )}
         </Group>
 
-        <Group title={t('settings.group.language')}>
-          <LanguageMenu variant="inline" value={s.uiLanguage ?? course.defaultUiLanguage} onChange={(next) => set({ uiLanguage: next })} />
-          <p className="mt-2 text-xs text-slate-500">{t('settings.uiLanguageDesc')}</p>
-        </Group>
+        </Section>
 
+        <Section title={t('settings.section.study')}>
         <Group title={t('settings.group.curriculum')}>
           <div className="grid gap-2" role="radiogroup" aria-label={t('settings.curriculum')}>
             {course.curricula.map((c) => (
@@ -202,72 +201,6 @@ export function SettingsModal({
             ))}
           </div>
           <p className="mt-2 text-xs text-slate-500">{t('settings.curriculumNote')}</p>
-        </Group>
-
-        <Group title={t('settings.group.audio')}>
-          <div className="flex flex-wrap items-center gap-2">
-            {SPEECH_RATES.map((r) => (
-              <button
-                key={r}
-                onClick={() => set({ speechRate: r })}
-                aria-pressed={s.speechRate === r}
-                className={`rounded-lg border px-3 py-1.5 text-sm tabular-nums ${
-                  s.speechRate === r ? 'border-rose-500 bg-rose-500 text-white' : 'border-slate-300 dark:border-slate-600'
-                }`}
-              >
-                {r}×
-              </button>
-            ))}
-            <AudioButton
-              speech={speech}
-              text={course.speechSample}
-              rate={s.speechRate}
-              label={t('settings.audioTest')}
-            />
-          </div>
-          <label className="mt-3 flex items-center justify-between gap-4">
-            <span>{t('settings.soundEffectsHaptics')}</span>
-            <Toggle checked={s.soundEffects} onChange={(v) => set({ soundEffects: v })} label={t('settings.soundEffects')} />
-          </label>
-          <p className="mt-2 text-xs text-slate-500">
-            {speech.voice
-              ? t('settings.voice.local', { name: speech.voice.name, lang: speech.voice.lang })
-              : t(course.track === 'english' ? 'settings.voice.stream.english' : 'settings.voice.stream.chinese')}
-          </p>
-        </Group>
-
-        <Group title={t('settings.group.display')}>
-          <div className="mb-3 flex items-center justify-between gap-4">
-            <span>{t('settings.theme')}</span>
-            <div className="inline-flex rounded-lg border border-slate-300 p-0.5 dark:border-slate-600" role="radiogroup" aria-label={t('settings.theme')}>
-              {(['system', 'light', 'dark'] as ThemePref[]).map((theme) => (
-                <button
-                  key={theme}
-                  role="radio"
-                  aria-checked={s.theme === theme}
-                  onClick={() => set({ theme })}
-                  className={`rounded-md px-3 py-1 text-sm ${s.theme === theme ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : ''}`}
-                >
-                  {t(`settings.theme.${theme}`)}
-                </button>
-              ))}
-            </div>
-          </div>
-          {course.features.tones && (
-            <label className="flex items-center justify-between gap-4">
-              <span>
-                {t('settings.colorTones')}
-                <span className="ml-2 text-sm">
-                  {TONE_DEMO.map(([syllable, className]) => (
-                    <span key={syllable} className={`${className} mr-1`}>
-                      {syllable}
-                    </span>
-                  ))}
-                </span>
-              </span>
-              <Toggle checked={s.colorTones} onChange={(v) => set({ colorTones: v })} label={t('settings.colorTones')} />
-            </label>
-          )}
         </Group>
 
         <Group title={t('settings.pace')}>
@@ -429,6 +362,86 @@ export function SettingsModal({
           </Group>
         )}
 
+        </Section>
+
+        <Section title={t('settings.section.audio')}>
+        <Group title={t('settings.group.audio')}>
+          <div className="flex flex-wrap items-center gap-2">
+            {SPEECH_RATES.map((r) => (
+              <button
+                key={r}
+                onClick={() => set({ speechRate: r })}
+                aria-pressed={s.speechRate === r}
+                className={`rounded-lg border px-3 py-1.5 text-sm tabular-nums ${
+                  s.speechRate === r ? 'border-rose-500 bg-rose-500 text-white' : 'border-slate-300 dark:border-slate-600'
+                }`}
+              >
+                {r}×
+              </button>
+            ))}
+            <AudioButton
+              speech={speech}
+              text={course.speechSample}
+              rate={s.speechRate}
+              label={t('settings.audioTest')}
+            />
+          </div>
+          <label className="mt-3 flex items-center justify-between gap-4">
+            <span>{t('settings.soundEffectsHaptics')}</span>
+            <Toggle checked={s.soundEffects} onChange={(v) => set({ soundEffects: v })} label={t('settings.soundEffects')} />
+          </label>
+          <p className="mt-2 text-xs text-slate-500">
+            {speech.voice
+              ? t('settings.voice.local', { name: speech.voice.name, lang: speech.voice.lang })
+              : t(course.track === 'english' ? 'settings.voice.stream.english' : 'settings.voice.stream.chinese')}
+          </p>
+        </Group>
+
+        </Section>
+
+        <Section title={t('settings.section.look')}>
+        <Group title={t('settings.group.language')}>
+          <LanguageMenu value={s.uiLanguage ?? course.defaultUiLanguage} onChange={(next) => set({ uiLanguage: next })} />
+          <p className="mt-2 text-xs text-slate-500">{t('settings.uiLanguageDesc')}</p>
+        </Group>
+
+        <Group title={t('settings.group.display')}>
+          <div className="mb-3 flex items-center justify-between gap-4">
+            <span>{t('settings.theme')}</span>
+            <div className="inline-flex rounded-lg border border-slate-300 p-0.5 dark:border-slate-600" role="radiogroup" aria-label={t('settings.theme')}>
+              {(['system', 'light', 'dark'] as ThemePref[]).map((theme) => (
+                <button
+                  key={theme}
+                  role="radio"
+                  aria-checked={s.theme === theme}
+                  onClick={() => set({ theme })}
+                  className={`rounded-md px-3 py-1 text-sm ${s.theme === theme ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : ''}`}
+                >
+                  {t(`settings.theme.${theme}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+          {course.features.tones && (
+            <label className="flex items-center justify-between gap-4">
+              <span>
+                {t('settings.colorTones')}
+                <span className="ml-2 text-sm">
+                  {TONE_DEMO.map(([syllable, className]) => (
+                    <span key={syllable} className={`${className} mr-1`}>
+                      {syllable}
+                    </span>
+                  ))}
+                </span>
+              </span>
+              <Toggle checked={s.colorTones} onChange={(v) => set({ colorTones: v })} label={t('settings.colorTones')} />
+            </label>
+          )}
+        </Group>
+
+        </Section>
+
+        <Section title={t('settings.section.data')}>
         <Group title={t('settings.group.sync')}>
           <div className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-3">
             <div className="flex items-center justify-between">
@@ -494,8 +507,23 @@ export function SettingsModal({
             </p>
           )}
         </Group>
+
+        </Section>
       </div>
     </div>
+  );
+}
+
+/** A collapsible settings section; only the first one is open so the dialog stays short. */
+function Section({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: ReactNode }) {
+  return (
+    <details open={defaultOpen} className="group mt-5 rounded-2xl border border-slate-200 px-4 pb-4 dark:border-slate-700">
+      <summary className="-mx-1 flex cursor-pointer list-none items-center justify-between rounded-lg px-1 py-3 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 [&::-webkit-details-marker]:hidden">
+        {title}
+        <ChevronDown className="h-4 w-4 text-slate-500 transition-transform group-open:rotate-180" aria-hidden />
+      </summary>
+      {children}
+    </details>
   );
 }
 

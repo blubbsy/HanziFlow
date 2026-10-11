@@ -127,10 +127,12 @@ test.describe('Interface language', () => {
   test('the Settings modal offers every language and the choice applies immediately', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Settings' }).first().click();
-    const group = page.getByRole('radiogroup', { name: 'Interface language' });
+    const dialog = page.getByRole('dialog', { name: 'Settings' });
+    await dialog.getByText('Appearance & language').click();
+    await dialog.getByRole('button', { name: 'Interface language' }).click();
     // The three real languages are always offered; the pseudo-locale only exists in development builds
-    for (const name of [/English/, /简体中文/, /Deutsch/]) await expect(group.getByRole('radio', { name })).toBeVisible();
-    await group.getByRole('radio', { name: /Deutsch/ }).click();
+    for (const name of [/English/, /简体中文/, /Deutsch/]) await expect(page.getByRole('menuitemradio', { name })).toBeVisible();
+    await page.getByRole('menuitemradio', { name: /Deutsch/ }).click();
     await expect(page.getByRole('heading', { name: 'Einstellungen' })).toBeVisible();
   });
 });

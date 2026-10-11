@@ -53,35 +53,73 @@ interface Props {
 }
 
 export function LearningPathsView({ paths, lessons, ctx, selectedPathId, wordsOnly = false, onSelectPath, onOpenGrammar, onPracticeVocab }: Props) {
-  const { t } = useI18n();
   const path = paths.find((p) => p.id === selectedPathId);
   if (!path) {
-    const syllabus = paths.filter((p) => p.id.startsWith('level-'));
-    const themed = paths.filter((p) => !p.id.startsWith('level-'));
-    return (
-      <div className="space-y-6">
-        {[
-          { id: 'syllabus', title: t('grammar.paths.syllabus'), hint: t(wordsOnly ? 'grammar.paths.syllabusHintWords' : 'grammar.paths.syllabusHint'), list: syllabus },
-          { id: 'themed', title: t('grammar.paths.themed'), hint: t('grammar.paths.themedHint'), list: themed },
-        ]
-          .filter((g) => g.list.length)
-          .map((g) => (
-            <section key={g.id}>
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{g.title}</h2>
-              <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">{g.hint}</p>
-              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {g.list.map((p) => (
-                  <li key={p.id}>
-                    <PathCard path={p} ctx={ctx} onOpen={() => onSelectPath(p.id)} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-      </div>
-    );
+    return <PathOverview paths={paths} ctx={ctx} wordsOnly={wordsOnly} onSelectPath={onSelectPath} />;
   }
   return <PathDetail key={path.id} path={path} lessons={lessons} ctx={ctx} onBack={() => onSelectPath(null)} onOpenGrammar={onOpenGrammar} onPracticeVocab={onPracticeVocab} />;
+}
+
+/** The path to carry on with (the one in progress, else the first syllabus path), then everything else on request. */
+function PathOverview({ paths, ctx, wordsOnly, onSelectPath }: { paths: LearningPath[]; ctx: PathContext; wordsOnly: boolean; onSelectPath: (id: string | null) => void }) {
+  const { t } = useI18n();
+  const syllabus = paths.filter((p) => p.id.startsWith('level-'));
+  const themed = paths.filter((p) => !p.id.startsWith('level-'));
+  const inProgress = paths
+    .map((p) => ({ p, ratio: pathStats(p, ctx).ratio }))
+    .filter((x) => x.ratio > 0 && x.ratio < 1)
+    .sort((x, y) => y.ratio - x.ratio)[0]?.p;
+  const featured = inProgress ?? syllabus[0] ?? paths[0];
+  const [browse, setBrowse] = useState(false);
+  if (!featured) return null;
+  const others = paths.filter((p) => p.id !== featured.id);
+
+  return (
+    <div className="space-y-5">
+      <section aria-labelledby="featured-path">
+        <h2 id="featured-path" className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+          {t(inProgress ? 'grammar.paths.continue' : 'grammar.paths.startHere')}
+        </h2>
+        <PathCard path={featured} ctx={ctx} onOpen={() => onSelectPath(featured.id)} />
+      </section>
+
+      {others.length > 0 && (
+        <section>
+          <button
+            type="button"
+            onClick={() => setBrowse((v) => !v)}
+            aria-expanded={browse}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-sm font-medium text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white ${focusRing}`}
+          >
+            <ChevronDown className={`h-4 w-4 transition-transform ${browse ? 'rotate-180' : ''}`} aria-hidden />
+            {t('grammar.paths.browseAll', { count: others.length })}
+          </button>
+          {browse && (
+            <div className="mt-4 space-y-6">
+              {[
+                { id: 'syllabus', title: t('grammar.paths.syllabus'), hint: t(wordsOnly ? 'grammar.paths.syllabusHintWords' : 'grammar.paths.syllabusHint'), list: syllabus.filter((x) => x.id !== featured.id) },
+                { id: 'themed', title: t('grammar.paths.themed'), hint: t('grammar.paths.themedHint'), list: themed.filter((x) => x.id !== featured.id) },
+              ]
+                .filter((g) => g.list.length)
+                .map((g) => (
+                  <section key={g.id}>
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">{g.title}</h2>
+                    <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">{g.hint}</p>
+                    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                      {g.list.map((x) => (
+                        <li key={x.id}>
+                          <PathCard path={x} ctx={ctx} onOpen={() => onSelectPath(x.id)} />
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ))}
+            </div>
+          )}
+        </section>
+      )}
+    </div>
+  );
 }
 
 function PathCard({ path, ctx, onOpen }: { path: LearningPath; ctx: PathContext; onOpen: () => void }) {
@@ -107,13 +145,19 @@ function PathCard({ path, ctx, onOpen }: { path: LearningPath; ctx: PathContext;
         <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-300 group-hover:text-rose-500" aria-hidden />
       </span>
       <span className="mt-auto block">
-        <span className="mb-1 flex justify-between text-xs text-slate-500 dark:text-slate-400">
-          <span>
-            {t('grammar.paths.unitsDone', { done: unitsDone, total: path.units.length })}
+        {stats.ratio === 0 ? (
+          <span className="block text-xs font-medium text-slate-600 dark:text-slate-300">
+            {t('grammar.paths.notStarted', { total: path.units.length })}
           </span>
-          <span className="font-medium">{formatNumber(pct / 100, { style: 'percent' })}</span>
-        </span>
-        <ProgressBar value={stats.ratio} label={t('grammar.paths.progressLabel', { title: path.title })} />
+        ) : (
+          <>
+            <span className="mb-1 flex justify-between text-xs text-slate-600 dark:text-slate-300">
+              <span>{t('grammar.paths.unitsDone', { done: unitsDone, total: path.units.length })}</span>
+              <span className="font-medium">{formatNumber(pct / 100, { style: 'percent' })}</span>
+            </span>
+            <ProgressBar value={stats.ratio} label={t('grammar.paths.progressLabel', { title: path.title })} />
+          </>
+        )}
       </span>
     </button>
   );

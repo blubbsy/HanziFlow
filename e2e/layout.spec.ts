@@ -100,6 +100,9 @@ for (const course of ['chinese', 'english', 'chinese:emotor', 'english:power-ele
         // The settings dialog is the densest screen
         await page.getByRole('button', { name: /settings|einstellungen|设置|Šéţţ/i }).first().click();
         await page.waitForTimeout(200);
+        // Every collapsed section opened: the dialog at its longest
+        await page.getByRole('dialog').evaluate((el) => el.querySelectorAll('details').forEach((d) => (d.open = true)));
+        await page.waitForTimeout(150);
         for (const issue of await layoutIssues(page)) problems.push(`settings: ${issue}`);
 
         expect(problems, problems.join('\n')).toEqual([]);
