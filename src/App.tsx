@@ -4,6 +4,7 @@ import type { Grade, SessionCard, SessionRequest, Settings, UserState, VocabItem
 import { useUserState } from './hooks/useUserState';
 import { useSpeech } from './utils/speech';
 import { buildSession, effectiveStreak, recordReview } from './utils/srsEngine';
+import { mergeUserStates } from './utils/syncMerge';
 import { buildRotationCards, interleaveCards, rotationCourseIds, rotationQuota, type RotationSource } from './utils/rotation';
 import { newlyUnlocked, type Badge } from './utils/analytics';
 import { loadLibrary, vocabForCurriculum, type VocabLibrary } from './data/vocab';
@@ -93,6 +94,11 @@ export default function App() {
   const { t } = i18n;
   const tRef = useRef(t);
   tRef.current = t;
+  // Sync runs over the network. Its result is merged into the state as it is *when it arrives*; replacing the
+  // state with it would undo whatever the learner did meanwhile (course switch, settings, reviews).
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const adoptSynced = useCallback((synced: UserState) => replace(mergeUserStates(stateRef.current, synced)), [replace]);
   useDocumentLanguage(lang);
   const setUiLanguage = useCallback((next: UiLanguage) => update((s) => ({ ...s, settings: { ...s.settings, uiLanguage: next } })), [update]);
 
@@ -114,9 +120,9 @@ export default function App() {
 
       if (pairKey) {
         try {
-          const res = await syncBidirectional(pairKey, state);
+          const res = await syncBidirectional(pairKey, stateRef.current);
           setStoredSyncKey(pairKey);
-          replace(res.mergedState);
+          adoptSynced(res.mergedState);
           allowSave();
           window.history.replaceState(null, '', window.location.pathname + '#/home');
           setView('home');
@@ -138,7 +144,7 @@ export default function App() {
       }
     };
     checkPairingParam();
-  }, [state, replace, allowSave]);
+  }, [adoptSynced, allowSave]);
 
   // Background sync on app mount & tab visibility change
   useEffect(() => {
@@ -146,10 +152,10 @@ export default function App() {
     const runBackgroundSync = () => {
       const key = getStoredSyncKey();
       if (!key) return;
-      syncBidirectional(key, state)
+      syncBidirectional(key, stateRef.current)
         .then((res) => {
           if (res.updated) {
-            replace(res.mergedState);
+            adoptSynced(res.mergedState);
             allowSave();
           }
         })
@@ -178,7 +184,7 @@ export default function App() {
     };
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, [ready, state, replace, allowSave]);
+  }, [ready, adoptSynced, allowSave]);
 
   // Auto-backup to vault on local progress updates (debounced)
   const prevSyncStateRef = useRef<string>('');
@@ -738,7 +744,7 @@ export default function App() {
           isOpen={showSyncModal}
           onClose={() => setShowSyncModal(false)}
           onStateMerged={(mergedState) => {
-            replace(mergedState);
+            adoptSynced(mergedState);
             allowSave();
           }}
         />
